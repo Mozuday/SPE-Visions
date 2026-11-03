@@ -1,118 +1,134 @@
-import { BookOpen, Clock3, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, BookOpen, Clock3, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import Card from "../ui/Card";
-import SectionTitle from "../ui/SectionTitle";
+import { supabase } from "../../lib/supabase";
+import type { Tables } from "../../types/supabase";
 
-const courses = [
-  {
-    title: "Full Stack Web Development",
-    duration: "12 Weeks",
-    level: "Beginner to Advanced",
-    description:
-      "Learn modern frontend and backend development by building practical projects and understanding how complete web applications work.",
-  },
-  {
-    title: "Frontend Development",
-    duration: "6 Weeks",
-    level: "Beginner",
-    description:
-      "Learn to build responsive and accessible interfaces using HTML, CSS, JavaScript, Tailwind CSS and React.",
-  },
-  {
-    title: "Backend Development",
-    duration: "8 Weeks",
-    level: "Intermediate",
-    description:
-      "Learn how to build REST APIs, work with databases and implement authentication using modern backend technologies.",
-  },
-];
+import Badge from "../ui/Badge";
+import Section from "../ui/Section";
+import SectionHeading from "../ui/SectionHeading";
+import Reveal from "../effects/Reveal";
+
+type Course = Tables<"courses">;
 
 const CoursesPreview = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (!mounted) return;
+
+      if (error) {
+        console.error("Failed to load courses preview:", error);
+      } else {
+        setCourses(data ?? []);
+      }
+
+      setLoading(false);
+    };
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!loading && courses.length === 0) return null;
+
   return (
-    <section className="border-b border-slate-200 bg-white py-24 dark:border-slate-800 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-
-        {/* Section Header */}
-        <SectionTitle
-          eyebrow="Learning"
-          title="Build skills through practical learning"
-          description="Courses designed to help students and aspiring developers understand real-world development through practical projects and industry-relevant technologies."
-        />
-
-        {/* Courses */}
-        <div className="mt-16 grid gap-6 lg:grid-cols-3">
-
-          {courses.map((course) => (
-            <Card
-              key={course.title}
-              className="group flex h-full flex-col p-7"
-            >
-
-              {/* Icon */}
-              <div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition-colors group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:group-hover:border-blue-900 dark:group-hover:bg-blue-950/40 dark:group-hover:text-blue-400">
-                <BookOpen size={22} strokeWidth={1.8} />
-              </div>
-
-              {/* Course Title */}
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
-                {course.title}
-              </h3>
-
-              {/* Course Meta */}
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <Clock3 size={16} />
-                  {course.duration}
-                </div>
-
-                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                  {course.level}
-                </span>
-
-              </div>
-
-              {/* Description */}
-              <p className="mt-5 flex-1 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                {course.description}
-              </p>
-
-              {/* Course Link */}
-              <Link
-                to="/courses"
-                className="mt-7 inline-flex w-fit items-center gap-2 text-sm font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-              >
-                View course
-
-                <ArrowUpRight
-                  size={16}
-                  className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                />
-              </Link>
-
-            </Card>
-          ))}
-
-        </div>
-
-        {/* CTA */}
-        <div className="mt-12 text-center">
-
+    <Section tone="muted">
+      <SectionHeading
+        index="03"
+        eyebrow="SPE Academy"
+        title="Learn skills that companies actually need"
+        description="Project-based courses built around real development workflows and the technologies developers use every day."
+        action={
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
           >
-            Explore all courses
-            <ArrowUpRight size={16} />
+            All courses
+            <ArrowRight size={15} />
           </Link>
+        }
+      />
 
+      {loading ? (
+        <div className="mt-12 flex justify-center text-slate-500">
+          <Loader2 size={22} className="animate-spin" />
         </div>
+      ) : (
+        <div className="mt-12 grid gap-4 lg:grid-cols-3">
+          {courses.map((course, index) => (
+            <Reveal key={course.id} delay={index * 80}>
+              <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-brand-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-500/60">
+                <div className="h-40 overflow-hidden border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
+                  {course.thumbnail_url ? (
+                    <img
+                      src={course.thumbnail_url}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-slate-300 dark:text-slate-600">
+                      <BookOpen size={30} />
+                    </div>
+                  )}
+                </div>
 
-      </div>
-    </section>
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge>
+                      <Clock3 size={12} />
+                      {course.duration}
+                    </Badge>
+
+                    {course.level && <Badge tone="brand">{course.level}</Badge>}
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+                    {course.title}
+                  </h3>
+
+                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                    {course.description}
+                  </p>
+
+                  <div className="mt-auto flex items-center justify-between pt-5">
+                    <span className="tabular font-mono text-sm font-semibold text-slate-900 dark:text-white">
+                      {course.price != null && course.price > 0
+                        ? `₹${course.price}`
+                        : "Free"}
+                    </span>
+
+                    <Link
+                      to={`/courses/${course.slug}`}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 after:absolute after:inset-0 after:content-[''] dark:text-brand-400"
+                    >
+                      View course
+                      <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </Section>
   );
 };
 

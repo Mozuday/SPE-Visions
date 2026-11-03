@@ -1,343 +1,486 @@
+import { useState } from "react";
 import {
+  AlertCircle,
+  CheckCircle,
+  Clock3,
+  Loader2,
   Mail,
-  MapPin,
   MessageCircle,
   Phone,
   Send,
+  ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { Link } from "react-router-dom";
+
+import { supabase } from "../../lib/supabase";
+import { COMPANY } from "../../constants/company";
+import { isValidEmail, isValidPhone } from "../../utils/validators";
+
+import Blueprint from "../../components/ui/Blueprint";
+import Container from "../../components/ui/Container";
+import Eyebrow from "../../components/ui/Eyebrow";
+import Reveal from "../../components/effects/Reveal";
+
+type ContactForm = {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  /*
+   * Honeypot: hidden from real users. Bots tend to fill every
+   * input, so any value here means the submission is spam.
+   */
+  website: string;
+};
+
+const initialForm: ContactForm = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+  website: "",
+};
+
+const subjects = [
+  "Website Development",
+  "App Development",
+  "Software Development",
+  "Bug Fixing",
+  "Technical Consulting",
+  "Courses",
+  "Internships",
+  "Other",
+];
+
+const inputClass =
+  "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+
+const labelClass =
+  "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
+
+const next = [
+  {
+    icon: Mail,
+    title: "We review your message",
+    text: "Our team reads every enquiry personally.",
+  },
+  {
+    icon: Clock3,
+    title: "We reply soon",
+    text: "You'll hear back by email or phone with next steps.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Your details stay private",
+    text: "We only use your information to respond to you.",
+  },
+];
 
 const Contact = () => {
-  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState<ContactForm>(initialForm);
 
-const handleSubmit = (
-  event: React.FormEvent<HTMLFormElement>
-) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const phoneHref = COMPANY.phone
+    ? `tel:${COMPANY.phone.replace(/[^\d+]/g, "")}`
+    : "";
+
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = event.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    setSubmitted(true);
+    if (submitting) return;
 
-    event.currentTarget.reset();
+    setError(null);
+
+    // Honeypot tripped: pretend it worked, store nothing
+    if (form.website) {
+      setSubmitted(true);
+      return;
+    }
+
+    const name = form.name.trim();
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    const message = form.message.trim();
+
+    if (name.length < 2) {
+      setError("Please enter your name.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (phone && !isValidPhone(phone)) {
+      setError("Please enter a valid phone number, or leave it blank.");
+      return;
+    }
+
+    if (message.length < 10) {
+      setError("Please write a little more so we can help you properly.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      /*
+       * No .select(): anonymous visitors may insert but are not
+       * allowed to read messages back.
+       */
+      const { error: insertError } = await supabase
+        .from("contact_messages")
+        .insert({
+          name,
+          email,
+          phone: phone || null,
+          subject: form.subject || null,
+          message,
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Failed to send contact message:", err);
+
+      setError("Something went wrong sending your message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (submitted) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+            <CheckCircle size={26} />
+          </div>
+
+          <h1 className="mt-5 text-2xl font-semibold text-slate-900 dark:text-white">
+            Message sent
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            Thank you for reaching out to {COMPANY.name}. We have received your
+            message and will get back to you soon.
+          </p>
+
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              to="/"
+              className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-400"
+            >
+              Go home
+            </Link>
+
+            <Link
+              to="/services"
+              className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+            >
+              View services
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-violet-50 py-24 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-blue-500/10 blur-[120px]" />
+      <section className="bg-hero-glow relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+        <Blueprint />
 
-        <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-violet-500/10 blur-[120px]" />
+        <Container className="relative py-14 md:py-20">
+          <Reveal>
+            <Eyebrow label="Contact us" />
 
-        <div className="relative mx-auto max-w-7xl px-6 text-center">
-          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-            Contact Us
-          </span>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] text-slate-950 sm:text-5xl dark:text-white">
+              Let's build something{" "}
+              <span className="text-brand-600 dark:text-brand-400">
+                together.
+              </span>
+            </h1>
 
-          <h1 className="mx-auto mt-7 max-w-4xl text-4xl font-bold text-slate-900 md:text-6xl dark:text-white">
-            Let's Start a Conversation
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-            Have a project idea, need technical assistance, or want to learn
-            more about our internships and courses? Get in touch with SPE
-            Visions.
-          </p>
-        </div>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+              Tell us about your project, question or idea. We'll review it and
+              get back to you with practical next steps.
+            </p>
+          </Reveal>
+        </Container>
       </section>
 
-      {/* Contact Section */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-12 lg:grid-cols-5">
-            {/* Contact Information */}
-            <div className="lg:col-span-2">
-              <span className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                Get In Touch
-              </span>
-
-              <h2 className="mt-4 text-4xl font-bold text-slate-900 dark:text-white">
-                We're Here to Help
+      {/* Form + info */}
+      <Container className="grid gap-10 py-14 md:py-20 lg:grid-cols-[1fr_340px]">
+        <Reveal>
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 md:p-8 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                Send us a message
               </h2>
 
-              <p className="mt-6 leading-8 text-slate-600 dark:text-slate-300">
-                Whether you're a business looking for a digital solution or a
-                student interested in internships and courses, feel free to
-                reach out to us.
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Fields marked * are required.
               </p>
+            </div>
 
-              <div className="mt-10 space-y-5">
-                {/* Email */}
-                <a
-                  href="mailto:contact@speVisions.in"
-                  className="group flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-blue-500 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+            {error && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"
+              >
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div>
+                <label htmlFor="name" className={labelClass}>
+                  Full name *
+                </label>
+
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Your name"
+                  required
+                  disabled={submitting}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className={labelClass}>
+                  Email address *
+                </label>
+
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                  disabled={submitting}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className={labelClass}>
+                  Phone number
+                </label>
+
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="+91 XXXXX XXXXX"
+                  disabled={submitting}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="subject" className={labelClass}>
+                  What do you need help with?
+                </label>
+
+                <select
+                  id="subject"
+                  name="subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  className={inputClass}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    <Mail size={22} />
-                  </div>
+                  <option value="">Select a topic</option>
 
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Email
-                    </p>
-
-                    <p className="mt-1 font-semibold text-slate-900 dark:text-white">
-                      contact@speVisions.in
-                    </p>
-                  </div>
-                </a>
-
-                {/* Phone */}
-                <a
-                  href="tel:+91XXXXXXXXXX"
-                  className="group flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-violet-500 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
-                    <Phone size={22} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Phone
-                    </p>
-
-                    <p className="mt-1 font-semibold text-slate-900 dark:text-white">
-                      +91 XXXXX XXXXX
-                    </p>
-                  </div>
-                </a>
-
-                {/* WhatsApp */}
-                <a
-                  href="#"
-                  className="group flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-green-500 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
-                    <MessageCircle size={22} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      WhatsApp
-                    </p>
-
-                    <p className="mt-1 font-semibold text-slate-900 dark:text-white">
-                      Chat With Us
-                    </p>
-                  </div>
-                </a>
-
-                {/* Location */}
-                <div className="flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
-                    <MapPin size={22} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Location
-                    </p>
-
-                    <p className="mt-1 font-semibold text-slate-900 dark:text-white">
-                      India
-                    </p>
-                  </div>
-                </div>
+                  {subjects.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Contact Form */}
-            <div className="lg:col-span-3">
-              <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-10 dark:border-slate-800 dark:bg-slate-900">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-                  Send Us a Message
-                </h2>
+            {/* Honeypot: invisible to real users */}
+            <div
+              aria-hidden="true"
+              className="absolute left-[-9999px] h-0 w-0 overflow-hidden"
+            >
+              <label htmlFor="website">Website</label>
 
-                <p className="mt-3 text-slate-600 dark:text-slate-300">
-                  Tell us about your requirements and we'll get back to you.
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="message" className={labelClass}>
+                Message *
+              </label>
+
+              <textarea
+                id="message"
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                placeholder="Tell us about your project or question..."
+                rows={7}
+                required
+                disabled={submitting}
+                className={`${inputClass} resize-none`}
+              />
+            </div>
+
+            <div className="border-t border-slate-200 pt-5 dark:border-slate-800">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:bg-brand-500 dark:hover:bg-brand-400"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send message
+                    <Send size={16} />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            {(COMPANY.email || COMPANY.phone || COMPANY.whatsapp) && (
+              <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-slate-400">
+                  Reach us directly
                 </p>
 
-                <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-                  {/* Name + Email */}
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="name"
-                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
-                      >
-                        Your Name
-                      </label>
-
-                      <input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        placeholder="Enter your name"
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
-                      >
-                        Email Address
-                      </label>
-
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="you@example.com"
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone + Subject */}
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="phone"
-                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
-                      >
-                        Phone Number
-                      </label>
-
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="+91 XXXXX XXXXX"
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="subject"
-                        className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
-                      >
-                        Subject
-                      </label>
-
-                      <input
-                        id="subject"
-                        name="subject"
-                        type="text"
-                        required
-                        placeholder="How can we help?"
-                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Service */}
-                  <div>
-                    <label
-                      htmlFor="service"
-                      className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                <div className="mt-4 space-y-3 text-sm">
+                  {COMPANY.email && (
+                    <a
+                      href={`mailto:${COMPANY.email}`}
+                      className="flex items-center gap-3 break-all text-slate-700 transition-colors hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400"
                     >
-                      Service
-                    </label>
-
-                    <select
-                      id="service"
-                      name="service"
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    >
-                      <option value="">Select a service</option>
-                      <option value="website">
-                        Website Development
-                      </option>
-                      <option value="app">
-                        App Development
-                      </option>
-                      <option value="software">
-                        Software Development
-                      </option>
-                      <option value="bug-fixing">
-                        Bug Fixing
-                      </option>
-                      <option value="consulting">
-                        Technical Consulting
-                      </option>
-                      <option value="internship">
-                        Internship
-                      </option>
-                      <option value="courses">
-                        Certification Courses
-                      </option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label
-                      htmlFor="message"
-                      className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200"
-                    >
-                      Message
-                    </label>
-
-                    <textarea
-                      id="message"
-                      name="message"
-                      required
-                      rows={6}
-                      placeholder="Tell us about your project or requirements..."
-                      className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    />
-                  </div>
-
-                  {/* Success Message */}
-                  {submitted && (
-                    <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400">
-                      Thank you! Your message has been submitted successfully.
-                    </div>
+                      <Mail size={16} className="shrink-0" />
+                      {COMPANY.email}
+                    </a>
                   )}
 
-                  {/* Submit */}
-                  <button
-                    type="submit"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    Send Message
-                    <Send size={18} />
-                  </button>
-                </form>
+                  {COMPANY.phone && (
+                    <a
+                      href={phoneHref}
+                      className="flex items-center gap-3 text-slate-700 transition-colors hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400"
+                    >
+                      <Phone size={16} className="shrink-0" />
+                      {COMPANY.phone}
+                    </a>
+                  )}
+
+                  {COMPANY.whatsapp && (
+                    <a
+                      href={COMPANY.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 text-slate-700 transition-colors hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400"
+                    >
+                      <MessageCircle size={16} className="shrink-0" />
+                      WhatsApp
+                    </a>
+                  )}
+                </div>
               </div>
+            )}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-slate-400">
+                What happens next
+              </p>
+
+              <ul className="mt-5 space-y-5">
+                {next.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <li key={item.title} className="flex gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-brand-600 dark:border-slate-700 dark:text-brand-400">
+                        <Icon size={17} />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {item.title}
+                        </h3>
+
+                        <p className="mt-0.5 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                          {item.text}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="pb-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="rounded-3xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 p-10 text-center md:p-16">
-            <h2 className="text-3xl font-bold text-white md:text-4xl">
-              Have an Idea? Let's Build It.
-            </h2>
-
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-              Share your requirements with us and let's explore how technology
-              can help turn your idea into a working solution.
-            </p>
-
-            <a
-              href="mailto:contact@speVisions.in"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 font-semibold text-slate-900 transition hover:scale-105"
-            >
-              Email Us
-              <Mail size={18} />
-            </a>
-          </div>
-        </div>
-      </section>
+          </aside>
+        </Reveal>
+      </Container>
     </main>
   );
 };

@@ -2,9 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>spe-visions</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>SPE Visions | Websites, Apps, Software &amp; Tech Training</title>
+    <meta
+      name="description"
+      content="We build websites, apps and custom software, and train developers through real projects, courses and internships."
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <meta property="og:title" content="SPE Visions" />
+    <meta
+      property="og:description"
+      content="Websites, apps, software and tech training."
+    />
+    <meta property="og:type" content="website" />
+
+    <!-- Apply the saved theme before first paint (prevents a white flash) -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var dark =
+            saved === "dark" ||
+            (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

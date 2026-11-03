@@ -1,68 +1,37 @@
-import { useEffect, useState } from "react";
-import { Outlet, Navigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { useState } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+
+import useAuth from "../../hooks/useAuth";
+
 import AdminHeader from "../components/AdminHeader";
 import AdminSidebar from "../components/AdminSidebar";
 
-type AuthStatus = "checking" | "authorized" | "unauthorized";
-
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [status, setStatus] = useState<AuthStatus>("checking");
+  const { user, isAdmin, loading } = useAuth();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkAdminAccess = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        if (isMounted) setStatus("unauthorized");
-        return;
-      }
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
-
-      if (error || profile?.role !== "admin") {
-        if (isMounted) setStatus("unauthorized");
-        return;
-      }
-
-      if (isMounted) setStatus("authorized");
-    };
-
-    checkAdminAccess();
-
-    // Re-check if the session changes elsewhere (e.g. sign out in another tab)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      checkAdminAccess();
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (status === "checking") {
+  /*
+   * Loading state — AuthContext is still resolving the session
+   * and profile on initial mount.
+   */
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-slate-950">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Checking admin access...
-        </p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-cyan-500 dark:border-slate-700 dark:border-t-cyan-400" />
+
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Verifying admin access...
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (status === "unauthorized") {
+  /*
+   * Not logged in, or logged in but not an admin — redirect to login.
+   */
+  if (!user || !isAdmin) {
     return <Navigate to="/admin/login" replace />;
   }
 
@@ -73,7 +42,7 @@ const AdminLayout = () => {
       <div className="lg:pl-64">
         <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className="min-h-[calc(100vh-64px)] p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

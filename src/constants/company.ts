@@ -1,17 +1,25 @@
 export const COMPANY = {
   name: "SPE Visions",
 
-  email: "contact@speVisions.in",
+  email: "uday88687@gmail.com",
 
-  phone: "+91 XXXXX XXXXX",
+  // Leave empty until you have a public number — hidden when empty
+  phone: "",
 
-  whatsapp: "https://wa.me/91XXXXXXXXXX",
+  // Format: https://wa.me/<country code><number>, digits only
+  whatsapp: "https://wa.me/917906932858",
 
-  instagram: "https://instagram.com/yourpage",
+  // Example: https://t.me/yourhandle — hidden when empty
+  telegram: "",
 
-  github: "https://github.com/yourusername",
+  instagram: "https://instagram.com/speVisions",
 
-  linkedin: "https://linkedin.com/in/yourprofile",
+  // Leave empty to hide the icon
+  github: "",
+  linkedin: "",
+  youtube: "",
+  facebook: "",
+  twitter: "",
 
-  portfolio: "https://yourportfolio.com",
+  portfolio: "",
 };

@@ -1,133 +1,278 @@
-import { ArrowRight, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  AlertCircle,
+  ArrowRight,
+  ArrowUpRight,
+  FolderKanban,
+  Layers3,
+  Loader2,
+} from "lucide-react";
 
-const projects = [
+import { supabase } from "../../lib/supabase";
+import type { Tables } from "../../types/supabase";
+
+import Badge from "../../components/ui/Badge";
+import Blueprint from "../../components/ui/Blueprint";
+import { ButtonLink } from "../../components/ui/Button";
+import Container from "../../components/ui/Container";
+import EmptyState from "../../components/ui/EmptyState";
+import Eyebrow from "../../components/ui/Eyebrow";
+import Section from "../../components/ui/Section";
+import SectionHeading from "../../components/ui/SectionHeading";
+import Reveal from "../../components/effects/Reveal";
+
+type Project = Tables<"portfolio_projects">;
+
+/*
+ * Only allow http(s) links so a bad value in the database
+ * can never become a javascript: link.
+ */
+const getSafeUrl = (value: string | null): string | null => {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const approach = [
   {
-    title: "Portfolio Website",
-    category: "Personal Branding",
-    description:
-      "A modern and responsive portfolio website designed to showcase projects, technical skills and professional experience.",
-    technologies: ["React", "TypeScript", "Tailwind CSS"],
+    title: "Understand",
+    text: "We first understand the business requirement, users and problem the product needs to solve.",
   },
   {
-    title: "SPE Visions",
-    category: "Company Website",
-    description:
-      "A professional digital platform for software services, internships, certification courses and technology solutions.",
-    technologies: ["React", "TypeScript", "Node.js"],
+    title: "Build",
+    text: "We select suitable technologies and build with maintainability, usability and performance in mind.",
   },
   {
-    title: "Custom Web Application",
-    category: "Business Solution",
-    description:
-      "A scalable web application designed to simplify business workflows, improve productivity and provide a better user experience.",
-    technologies: ["React", "Node.js", "PostgreSQL"],
+    title: "Improve",
+    text: "We test, refine and improve the product based on real requirements and user feedback.",
   },
 ];
 
 const Portfolio = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProjects = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: fetchError } = await supabase
+          .from("portfolio_projects")
+          .select("*")
+          .eq("is_published", true)
+          .order("order_index", { ascending: true });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (mounted) {
+          setProjects(data ?? []);
+        }
+      } catch (err) {
+        console.error("Failed to load projects:", err);
+
+        if (mounted) {
+          setError("Unable to load projects right now. Please try again later.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadProjects();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <main>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-blue-50 py-24 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <span className="inline-flex rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-            Our Portfolio
-          </span>
+      <section className="bg-hero-glow relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+        <Blueprint />
 
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl dark:text-white">
-            Projects Built With Purpose
-          </h1>
+        <Container className="relative py-14 md:py-20">
+          <Reveal>
+            <Eyebrow label="Our portfolio" />
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-            Explore some of our projects and digital solutions. We focus on
-            performance, scalability, usability and modern technology.
-          </p>
-        </div>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] text-slate-950 sm:text-5xl dark:text-white">
+              Projects built{" "}
+              <span className="text-brand-600 dark:text-brand-400">
+                with purpose.
+              </span>
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+              Explore some of our digital projects. We focus on building
+              products that are practical, reliable, scalable and easy to use.
+            </p>
+          </Reveal>
+        </Container>
       </section>
 
       {/* Projects */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <article
-                key={project.title}
-                className="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
-              >
-                {/* Project Preview */}
-                <div className="relative flex h-56 items-center justify-center overflow-hidden bg-gradient-to-br from-blue-600 via-violet-600 to-cyan-500">
-                  <div className="absolute inset-0 bg-black/10 transition group-hover:bg-black/0" />
+      <Section>
+        <SectionHeading
+          eyebrow="Selected work"
+          title="Digital solutions we have built"
+          description="Each project solves a specific problem with a clean interface, maintainable architecture and a strong user experience."
+        />
 
-                  <span className="relative text-3xl font-bold text-white">
-                    Project
-                  </span>
-
-                  <div className="absolute right-5 top-5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
-                    {project.category}
-                  </div>
-                </div>
-
-                {/* Project Content */}
-                <div className="p-8">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {project.title}
-                  </h2>
-
-                  <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
-                    {project.description}
-                  </p>
-
-                  {/* Technologies */}
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {project.technologies.map((technology) => (
-                      <span
-                        key={technology}
-                        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                      >
-                        {technology}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Action */}
-                  <button
-                    type="button"
-                    className="mt-8 inline-flex items-center gap-2 font-semibold text-blue-600 transition-all group-hover:gap-3 dark:text-blue-400"
-                  >
-                    View Project
-                    <ExternalLink size={17} />
-                  </button>
-                </div>
-              </article>
-            ))}
+        {loading && (
+          <div className="mt-12 flex items-center justify-center gap-3 text-slate-500">
+            <Loader2 size={22} className="animate-spin" />
+            Loading projects...
           </div>
+        )}
+
+        {!loading && error && (
+          <div className="mt-12 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && projects.length === 0 && (
+          <EmptyState
+            icon={FolderKanban}
+            message="Our projects will appear here soon."
+          />
+        )}
+
+        {!loading && !error && projects.length > 0 && (
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project, index) => {
+              const projectUrl = getSafeUrl(project.project_url);
+              const tags = project.tags ?? [];
+
+              return (
+                <Reveal key={project.id} delay={Math.min(index, 5) * 70}>
+                  <article
+                    data-spotlight
+                    className="spotlight group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-500/60"
+                  >
+                    <div className="h-48 overflow-hidden border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
+                      {project.cover_image_url ? (
+                        <img
+                          src={project.cover_image_url}
+                          alt={project.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-slate-300 dark:text-slate-600">
+                          <Layers3 size={32} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-6">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {project.title}
+                      </h3>
+
+                      {project.description && (
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                          {project.description}
+                        </p>
+                      )}
+
+                      {tags.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-1.5">
+                          {tags.map((tag) => (
+                            <Badge key={tag}>{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {projectUrl && (
+                        <a
+                          href={projectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-slate-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-400"
+                        >
+                          View project
+                          <ArrowUpRight size={15} />
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
+      {/* Approach */}
+      <Section tone="muted">
+        <SectionHeading
+          eyebrow="Our approach"
+          title="We build with purpose"
+          description="Good software is not just about writing code. It should solve a real problem, provide a good experience and stay reliable as the product grows."
+        />
+
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {approach.map((item, index) => (
+            <Reveal key={item.title} delay={index * 100}>
+              <p className="font-mono text-xs text-slate-400">0{index + 1}</p>
+
+              <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                {item.title}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                {item.text}
+              </p>
+            </Reveal>
+          ))}
         </div>
-      </section>
+      </Section>
 
       {/* CTA */}
-      <section className="pb-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="rounded-3xl bg-slate-900 p-10 text-center dark:bg-slate-800 md:p-14">
-            <h2 className="text-3xl font-bold text-white md:text-4xl">
-              Have an Idea for Your Next Project?
+      <Section bordered={false}>
+        <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-slate-200 bg-white p-8 md:flex-row md:items-center dark:border-slate-800 dark:bg-slate-900">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              Have an idea for your next project?
             </h2>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-              Let's discuss your requirements and create a reliable digital
-              solution designed around your goals.
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Tell us what you want to build, improve or fix, and we'll help
+              turn it into a practical digital solution.
             </p>
+          </div>
 
-            <Link
-              to="/contact"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-slate-900 transition hover:scale-105"
-            >
-              Start a Project
-              <ArrowRight size={18} />
-            </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <ButtonLink to="/contact">
+              Start a project
+              <ArrowRight size={16} />
+            </ButtonLink>
+
+            <ButtonLink to="/services" variant="outline">
+              View services
+            </ButtonLink>
           </div>
         </div>
-      </section>
+      </Section>
     </main>
   );
 };

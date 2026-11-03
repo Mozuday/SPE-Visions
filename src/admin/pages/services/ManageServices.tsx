@@ -17,6 +17,7 @@ import type {
   InsertTables,
   UpdateTables,
 } from "../../../types/supabase";
+import { getIcon, iconOptions } from "../../../utils/iconMap";
 
 type Service = Tables<"services">;
 
@@ -31,7 +32,7 @@ type ServiceForm = {
 const emptyForm: ServiceForm = {
   title: "",
   description: "",
-  icon: "",
+  icon: iconOptions[0]?.value ?? "",
   is_published: true,
   order_index: "0",
 };
@@ -119,7 +120,7 @@ const ManageServices = () => {
     setForm({
       title: service.title,
       description: service.description ?? "",
-      icon: service.icon ?? "",
+      icon: service.icon ?? iconOptions[0]?.value ?? "",
       is_published: service.is_published,
       order_index: String(service.order_index),
     });
@@ -157,7 +158,7 @@ const ManageServices = () => {
   // =========================================================
 
   const handleSubmit = async (
-    event: React.SyntheticEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
@@ -196,7 +197,7 @@ const ManageServices = () => {
           title,
           slug,
           description,
-          icon: form.icon.trim() || null,
+          icon: form.icon || null,
           is_published: form.is_published,
           order_index: orderIndex,
         };
@@ -214,7 +215,7 @@ const ManageServices = () => {
           title,
           slug,
           description,
-          icon: form.icon.trim() || null,
+          icon: form.icon || null,
           is_published: form.is_published,
           order_index: orderIndex,
         };
@@ -333,11 +334,7 @@ const ManageServices = () => {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-          <Loader2
-            size={24}
-            className="animate-spin"
-          />
-
+          <Loader2 size={24} className="animate-spin" />
           <span>Loading services...</span>
         </div>
       </div>
@@ -350,9 +347,7 @@ const ManageServices = () => {
 
   return (
     <div className="space-y-8">
-
       {/* Header */}
-
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -376,28 +371,17 @@ const ManageServices = () => {
       </div>
 
       {/* Error */}
-
       {error && !isModalOpen && (
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-          <AlertCircle
-            size={20}
-            className="mt-0.5 shrink-0"
-          />
-
+          <AlertCircle size={20} className="mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold">
-              Something went wrong
-            </p>
-
-            <p className="mt-1 text-sm">
-              {error}
-            </p>
+            <p className="font-semibold">Something went wrong</p>
+            <p className="mt-1 text-sm">{error}</p>
           </div>
         </div>
       )}
 
       {/* Services */}
-
       {services.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
@@ -422,143 +406,112 @@ const ManageServices = () => {
         </div>
       ) : (
         <div className="grid gap-6">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          {services.map((service) => {
+            const Icon = getIcon(service.icon);
 
-                {/* Information */}
-
-                <div className="flex min-w-0 flex-1 gap-5">
-
-                  <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 sm:flex">
-                    {service.icon ? (
-                      <span className="text-xl">
-                        {service.icon}
-                      </span>
-                    ) : (
-                      <span className="text-xl font-bold">
-                        S
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-
-                    <div className="flex flex-wrap items-center gap-3">
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          service.is_published
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                        }`}
-                      >
-                        {service.is_published
-                          ? "Published"
-                          : "Draft"}
-                      </span>
-
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        #{service.order_index + 1}
-                      </span>
-
+            return (
+              <div
+                key={service.id}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  {/* Information */}
+                  <div className="flex min-w-0 flex-1 gap-5">
+                    <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 sm:flex">
+                      <Icon size={24} strokeWidth={1.8} />
                     </div>
 
-                    <h2 className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">
-                      {service.title}
-                    </h2>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            service.is_published
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          {service.is_published ? "Published" : "Draft"}
+                        </span>
 
-                    <p className="mt-3 max-w-3xl leading-7 text-slate-600 dark:text-slate-400">
-                      {service.description}
-                    </p>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          #{service.order_index + 1}
+                        </span>
+                      </div>
 
-                    <div className="mt-4">
-                      <span className="text-xs font-medium text-slate-400">
-                        Slug:
-                      </span>
+                      <h2 className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">
+                        {service.title}
+                      </h2>
 
-                      <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
-                        {service.slug}
-                      </span>
+                      <p className="mt-3 max-w-3xl leading-7 text-slate-600 dark:text-slate-400">
+                        {service.description}
+                      </p>
+
+                      <div className="mt-4">
+                        <span className="text-xs font-medium text-slate-400">
+                          Slug:
+                        </span>
+                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                          {service.slug}
+                        </span>
+                      </div>
                     </div>
-
                   </div>
-                </div>
 
-                {/* Actions */}
+                  {/* Actions */}
+                  <div className="flex shrink-0 flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void togglePublished(service)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"
+                    >
+                      {service.is_published ? (
+                        <>
+                          <EyeOff size={17} />
+                          Unpublish
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={17} />
+                          Publish
+                        </>
+                      )}
+                    </button>
 
-                <div className="flex shrink-0 flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(service)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"
+                    >
+                      <Pencil size={17} />
+                      Edit
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void togglePublished(service)
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"
-                  >
-                    {service.is_published ? (
-                      <>
-                        <EyeOff size={17} />
-                        Unpublish
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={17} />
-                        Publish
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openEditModal(service)
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"
-                  >
-                    <Pencil size={17} />
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void handleDelete(service.id)
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-950/30"
-                  >
-                    <Trash2 size={17} />
-                    Delete
-                  </button>
-
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(service.id)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-950/30"
+                    >
+                      <Trash2 size={17} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal */}
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
-
             {/* Modal Header */}
-
             <div className="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-800">
-
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {editingService
-                    ? "Edit Service"
-                    : "Add Service"}
+                  {editingService ? "Edit Service" : "Add Service"}
                 </h2>
-
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {editingService
                     ? "Update the service information."
@@ -574,33 +527,19 @@ const ManageServices = () => {
               >
                 <X size={22} />
               </button>
-
             </div>
 
             {/* Modal Error */}
-
             {error && (
               <div className="mx-6 mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-                <AlertCircle
-                  size={20}
-                  className="mt-0.5 shrink-0"
-                />
-
-                <p className="text-sm">
-                  {error}
-                </p>
+                <AlertCircle size={20} className="mt-0.5 shrink-0" />
+                <p className="text-sm">{error}</p>
               </div>
             )}
 
             {/* Form */}
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6 p-6"
-            >
-
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
               {/* Title */}
-
               <div>
                 <label
                   htmlFor="service-title"
@@ -613,12 +552,7 @@ const ManageServices = () => {
                   id="service-title"
                   type="text"
                   value={form.title}
-                  onChange={(event) =>
-                    updateForm(
-                      "title",
-                      event.target.value
-                    )
-                  }
+                  onChange={(event) => updateForm("title", event.target.value)}
                   placeholder="Website Development"
                   required
                   disabled={saving}
@@ -627,7 +561,6 @@ const ManageServices = () => {
               </div>
 
               {/* Description */}
-
               <div>
                 <label
                   htmlFor="service-description"
@@ -640,10 +573,7 @@ const ManageServices = () => {
                   id="service-description"
                   value={form.description}
                   onChange={(event) =>
-                    updateForm(
-                      "description",
-                      event.target.value
-                    )
+                    updateForm("description", event.target.value)
                   }
                   placeholder="Describe your service..."
                   rows={5}
@@ -654,9 +584,7 @@ const ManageServices = () => {
               </div>
 
               {/* Icon + Order */}
-
               <div className="grid gap-5 sm:grid-cols-2">
-
                 <div>
                   <label
                     htmlFor="service-icon"
@@ -665,23 +593,22 @@ const ManageServices = () => {
                     Icon
                   </label>
 
-                  <input
+                  <select
                     id="service-icon"
-                    type="text"
                     value={form.icon}
-                    onChange={(event) =>
-                      updateForm(
-                        "icon",
-                        event.target.value
-                      )
-                    }
-                    placeholder="💻"
+                    onChange={(event) => updateForm("icon", event.target.value)}
                     disabled={saving}
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                  />
+                  >
+                    {iconOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
 
                   <p className="mt-2 text-xs text-slate-500">
-                    You can use an emoji for now.
+                    This icon appears on the public services page.
                   </p>
                 </div>
 
@@ -699,10 +626,7 @@ const ManageServices = () => {
                     min="0"
                     value={form.order_index}
                     onChange={(event) =>
-                      updateForm(
-                        "order_index",
-                        event.target.value
-                      )
+                      updateForm("order_index", event.target.value)
                     }
                     disabled={saving}
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -712,51 +636,35 @@ const ManageServices = () => {
                     Lower numbers appear first.
                   </p>
                 </div>
-
               </div>
 
               {/* Publish */}
-
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
-
                 <input
                   type="checkbox"
                   checked={form.is_published}
                   onChange={(event) =>
-                    updateForm(
-                      "is_published",
-                      event.target.checked
-                    )
+                    updateForm("is_published", event.target.checked)
                   }
                   disabled={saving}
                   className="mt-1 h-5 w-5 accent-blue-600"
                 />
 
                 <div className="flex items-start gap-3">
-
-                  <CheckCircle
-                    size={20}
-                    className="mt-0.5 text-green-500"
-                  />
-
+                  <CheckCircle size={20} className="mt-0.5 text-green-500" />
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-white">
                       Publish Service
                     </p>
-
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       Published services will be visible on the public website.
                     </p>
                   </div>
-
                 </div>
-
               </label>
 
               {/* Buttons */}
-
               <div className="flex justify-end gap-3 border-t border-slate-200 pt-6 dark:border-slate-800">
-
                 <button
                   type="button"
                   onClick={closeModal}
@@ -771,22 +679,14 @@ const ManageServices = () => {
                   disabled={saving}
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving && (
-                    <Loader2
-                      size={18}
-                      className="animate-spin"
-                    />
-                  )}
-
+                  {saving && <Loader2 size={18} className="animate-spin" />}
                   {saving
                     ? "Saving..."
                     : editingService
                       ? "Update Service"
                       : "Create Service"}
                 </button>
-
               </div>
-
             </form>
           </div>
         </div>

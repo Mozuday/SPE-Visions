@@ -1,345 +1,292 @@
 import {
   ArrowRight,
-  CheckCircle,
+  CheckCircle2,
   Code2,
-  Lightbulb,
+  Globe,
+  GraduationCap,
+  Rocket,
   ShieldCheck,
+  Smartphone,
   Target,
   Users,
-  Zap,
+  Wrench,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+
+import { COMPANY } from "../../constants/company";
+
+import Blueprint from "../../components/ui/Blueprint";
+import { ButtonLink } from "../../components/ui/Button";
+import Container from "../../components/ui/Container";
+import Eyebrow from "../../components/ui/Eyebrow";
+import Section from "../../components/ui/Section";
+import SectionHeading from "../../components/ui/SectionHeading";
+import Reveal from "../../components/effects/Reveal";
+
+const whatWeDo = [
+  {
+    icon: Globe,
+    title: "Websites",
+    text: "Fast, responsive websites for businesses, startups and personal brands.",
+  },
+  {
+    icon: Smartphone,
+    title: "Applications",
+    text: "Mobile and web applications built for reliable performance and clean experiences.",
+  },
+  {
+    icon: Code2,
+    title: "Custom software",
+    text: "Software that automates operations and fits how your business actually works.",
+  },
+  {
+    icon: Wrench,
+    title: "Fixes & consulting",
+    text: "Bug fixing, optimization and practical technical guidance for existing products.",
+  },
+  {
+    icon: GraduationCap,
+    title: "SPE Academy",
+    text: "Project-based courses that help learners build real, job-relevant skills.",
+  },
+  {
+    icon: Users,
+    title: "Internships",
+    text: "Hands-on internship programs that give students real project experience.",
+  },
+];
 
 const values = [
   {
     icon: Target,
-    title: "Our Mission",
-    description:
-      "To provide practical, reliable and accessible digital solutions that help businesses grow and help students build real-world technology skills.",
-  },
-  {
-    icon: Lightbulb,
-    title: "Innovation",
-    description:
-      "We continuously explore modern technologies and practical approaches to create solutions that solve real problems.",
+    title: "Practical first",
+    text: "We choose technology that solves your problem, not technology that looks impressive.",
   },
   {
     icon: ShieldCheck,
-    title: "Quality",
-    description:
-      "We focus on clean development, reliable solutions, security and a professional experience for every client and learner.",
+    title: "Reliable and secure",
+    text: "We build with maintainability and security in mind so products hold up as they grow.",
+  },
+  {
+    icon: Rocket,
+    title: "Built to scale",
+    text: "Solutions are designed to grow with your users, your team and your ambitions.",
   },
   {
     icon: Users,
-    title: "People First",
-    description:
-      "We believe technology should serve people. Our solutions are designed around the needs of businesses, students and users.",
+    title: "Transparent",
+    text: "Clear communication and honest timelines, from the first call to delivery and beyond.",
   },
 ];
 
-const services = [
-  "Website Development",
-  "Application Development",
-  "Software Development",
-  "Bug Fixing and Maintenance",
-  "Technical Consulting",
-  "Industry-Focused Internships",
-  "Certification Courses",
+const process = [
+  {
+    title: "Understand",
+    text: "We learn your goals, users and constraints before proposing anything.",
+  },
+  {
+    title: "Build",
+    text: "We design and develop the solution with regular progress you can see.",
+  },
+  {
+    title: "Deliver & support",
+    text: "We test, launch and stay available to improve and maintain what we built.",
+  },
+];
+
+const expectations = [
+  "Clear communication at every stage",
+  "Clean, maintainable code",
+  "Honest advice on the right solution",
+  "Support after launch",
 ];
 
 const About = () => {
   return (
     <main>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-violet-50 py-24 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-blue-500/10 blur-[120px]" />
+      <section className="bg-hero-glow relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+        <Blueprint />
 
-        <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-violet-500/10 blur-[120px]" />
+        <Container className="relative py-14 md:py-20">
+          <Reveal>
+            <Eyebrow label={`About ${COMPANY.name}`} />
 
-        <div className="relative mx-auto max-w-7xl px-6 text-center">
-          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-            About SPE Visions
-          </span>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] text-slate-950 sm:text-5xl dark:text-white">
+              Technology built to be{" "}
+              <span className="text-brand-600 dark:text-brand-400">useful.</span>
+            </h1>
 
-          <h1 className="mx-auto mt-7 max-w-4xl text-4xl font-bold tracking-tight text-slate-900 md:text-6xl dark:text-white">
-            Building Technology.
-            <span className="block bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent">
-              Creating Opportunities.
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-7 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-            SPE Visions is a technology-focused company providing digital
-            solutions for businesses and practical learning opportunities for
-            students and aspiring developers.
-          </p>
-        </div>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+              {COMPANY.name} is a technology company that builds websites,
+              applications and software for businesses that need more than a
+              template, and trains the next generation of developers through
+              real projects.
+            </p>
+          </Reveal>
+        </Container>
       </section>
 
-      {/* About Company */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
-            {/* Left */}
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                Who We Are
-              </span>
+      {/* Mission */}
+      <Section>
+        <div className="grid items-center gap-10 lg:grid-cols-2">
+          <Reveal>
+            <Eyebrow label="Our mission" />
 
-              <h2 className="mt-4 text-4xl font-bold text-slate-900 md:text-5xl dark:text-white">
-                Technology That Creates Real Impact
-              </h2>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-900 md:text-4xl dark:text-white">
+              Make good technology accessible
+            </h2>
 
-              <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">
-                SPE Visions was created with a simple goal: to combine
-                technology, practical development and learning opportunities
-                into one ecosystem.
+            <p className="mt-5 leading-7 text-slate-600 dark:text-slate-400">
+              Good software should not be limited to large companies. We help
+              startups, small businesses and individuals turn ideas into
+              reliable digital products, and we help learners gain the skills
+              to build such products themselves.
+            </p>
+
+            <p className="mt-4 leading-7 text-slate-600 dark:text-slate-400">
+              Every project, course and internship we run is focused on the
+              same thing: practical results you can actually use.
+            </p>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-slate-400">
+                What you can expect
               </p>
 
-              <p className="mt-5 leading-8 text-slate-600 dark:text-slate-300">
-                We work with businesses and individuals to build websites,
-                applications and software solutions while also helping students
-                gain practical exposure through internships and certification
-                courses.
-              </p>
-
-              <p className="mt-5 leading-8 text-slate-600 dark:text-slate-300">
-                Our approach is focused on practical execution. Instead of
-                building technology for the sake of technology, we aim to create
-                solutions that are useful, scalable and aligned with real-world
-                requirements.
-              </p>
-
-              <Link
-                to="/services"
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white transition hover:bg-blue-700"
-              >
-                Explore Our Services
-                <ArrowRight size={18} />
-              </Link>
+              <ul className="mt-5 space-y-4">
+                {expectations.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300"
+                  >
+                    <CheckCircle2
+                      size={18}
+                      className="mt-0.5 shrink-0 text-brand-600 dark:text-brand-400"
+                    />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
+          </Reveal>
+        </div>
+      </Section>
 
-            {/* Right */}
-            <div className="relative">
-              <div className="rounded-[32px] border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900">
-                <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-violet-600 to-cyan-500 p-8 text-white">
-                  <Code2 size={48} />
+      {/* What we do */}
+      <Section tone="muted">
+        <SectionHeading
+          eyebrow="What we do"
+          title="One team, building and teaching"
+        />
 
-                  <h3 className="mt-8 text-3xl font-bold">
-                    Digital Solutions
+        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {whatWeDo.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <Reveal key={item.title} delay={Math.min(index, 5) * 70}>
+                <div
+                  data-spotlight
+                  className="spotlight h-full rounded-xl border border-slate-200 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-500/60"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-brand-600 dark:border-slate-700 dark:text-brand-400">
+                    <Icon size={20} strokeWidth={1.8} />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">
+                    {item.title}
                   </h3>
 
-                  <p className="mt-5 leading-7 text-white/90">
-                    From an idea to a working product, we focus on building
-                    technology that is practical, scalable and ready for the
-                    real world.
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                    {item.text}
                   </p>
-
-                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
-                      <p className="text-3xl font-bold">01</p>
-                      <p className="mt-2 text-sm text-white/80">
-                        Understand
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
-                      <p className="text-3xl font-bold">02</p>
-                      <p className="mt-2 text-sm text-white/80">
-                        Build
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
-                      <p className="text-3xl font-bold">03</p>
-                      <p className="mt-2 text-sm text-white/80">
-                        Improve
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
-                      <p className="text-3xl font-bold">04</p>
-                      <p className="mt-2 text-sm text-white/80">
-                        Deliver
-                      </p>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </Reveal>
+            );
+          })}
         </div>
-      </section>
-
-      {/* Mission & Vision */}
-      <section className="bg-slate-50 py-24 dark:bg-slate-950">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                <Target size={28} />
-              </div>
-
-              <h2 className="mt-7 text-3xl font-bold text-slate-900 dark:text-white">
-                Our Mission
-              </h2>
-
-              <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
-                Our mission is to make technology more accessible and useful by
-                delivering quality digital solutions for businesses and
-                practical opportunities for students.
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
-                <Zap size={28} />
-              </div>
-
-              <h2 className="mt-7 text-3xl font-bold text-slate-900 dark:text-white">
-                Our Vision
-              </h2>
-
-              <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
-                Our vision is to build a technology ecosystem where businesses
-                can access reliable digital solutions and aspiring developers
-                can gain the practical skills needed to succeed.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      </Section>
 
       {/* Values */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center">
-            <span className="rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-              Our Values
-            </span>
+      <Section>
+        <SectionHeading eyebrow="Our values" title="How we work" />
 
-            <h2 className="mt-6 text-4xl font-bold text-slate-900 md:text-5xl dark:text-white">
-              What We Stand For
-            </h2>
+        <div className="mt-12 grid gap-4 sm:grid-cols-2">
+          {values.map((item, index) => {
+            const Icon = item.icon;
 
-            <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              Our work is guided by principles that help us build better
-              products, stronger relationships and meaningful opportunities.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {values.map((value) => {
-              const Icon = value.icon;
-
-              return (
-                <div
-                  key={value.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition hover:-translate-y-2 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    <Icon size={27} />
+            return (
+              <Reveal key={item.title} delay={index * 70}>
+                <div className="flex h-full gap-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-950">
+                    <Icon size={18} />
                   </div>
 
-                  <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white">
-                    {value.title}
-                  </h3>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      {item.title}
+                    </h3>
 
-                  <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
-                    {value.description}
-                  </p>
+                    <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                      {item.text}
+                    </p>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </Reveal>
+            );
+          })}
         </div>
-      </section>
+      </Section>
 
-      {/* What We Do */}
-      <section className="bg-slate-50 py-24 dark:bg-slate-950">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
-                What We Do
-              </span>
+      {/* Process */}
+      <Section tone="muted">
+        <SectionHeading eyebrow="Our process" title="From idea to launch" />
 
-              <h2 className="mt-4 text-4xl font-bold text-slate-900 md:text-5xl dark:text-white">
-                From Digital Products to Career Opportunities
-              </h2>
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {process.map((step, index) => (
+            <Reveal key={step.title} delay={index * 100}>
+              <p className="font-mono text-xs text-slate-400">0{index + 1}</p>
 
-              <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">
-                We operate across multiple areas of the technology ecosystem,
-                helping clients build digital products while helping students
-                develop industry-relevant skills.
+              <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                {step.title}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                {step.text}
               </p>
-
-              <div className="mt-8">
-                <Link
-                  to="/contact"
-                  className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-7 py-4 font-semibold text-white transition hover:bg-green-700"
-                >
-                  Work With Us
-                  <ArrowRight size={18} />
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="space-y-5">
-                {services.map((service) => (
-                  <div
-                    key={service}
-                    className="flex items-center gap-4 border-b border-slate-100 pb-5 last:border-0 last:pb-0 dark:border-slate-800"
-                  >
-                    <CheckCircle
-                      size={22}
-                      className="shrink-0 text-green-500"
-                    />
-
-                    <span className="font-medium text-slate-700 dark:text-slate-200">
-                      {service}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            </Reveal>
+          ))}
         </div>
-      </section>
+      </Section>
 
       {/* CTA */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="rounded-3xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 p-10 text-center md:p-16">
-            <h2 className="text-3xl font-bold text-white md:text-4xl">
-              Let's Build the Future Together
+      <Section bordered={false}>
+        <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-slate-200 bg-white p-8 md:flex-row md:items-center dark:border-slate-800 dark:bg-slate-900">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              Let's build something together
             </h2>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-              Whether you need a digital solution for your business or want to
-              develop your technology career, SPE Visions is here to help.
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Tell us what you want to build, improve or learn. We'll help you
+              find a practical way forward.
             </p>
+          </div>
 
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Link
-                to="/contact"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 font-semibold text-slate-900 transition hover:scale-105"
-              >
-                Contact Us
-                <ArrowRight size={18} />
-              </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <ButtonLink to="/contact">
+              Start a project
+              <ArrowRight size={16} />
+            </ButtonLink>
 
-              <Link
-                to="/internships"
-                className="rounded-xl border border-white/40 px-7 py-4 font-semibold text-white transition hover:bg-white/10"
-              >
-                Explore Internships
-              </Link>
-            </div>
+            <ButtonLink to="/portfolio" variant="outline">
+              View our work
+            </ButtonLink>
           </div>
         </div>
-      </section>
+      </Section>
     </main>
   );
 };

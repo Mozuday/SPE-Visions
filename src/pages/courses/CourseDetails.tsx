@@ -1,362 +1,387 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  CheckCircle,
+  CheckCircle2,
   Clock3,
-  Code2,
-  Database,
-  Globe,
+  Loader2,
   Lock,
+  PlayCircle,
 } from "lucide-react";
 
-const courses = [
-  {
-    id: "full-stack-web-development",
-    icon: Code2,
-    title: "Full Stack Web Development",
-    duration: "12 Weeks",
-    level: "Beginner to Advanced",
-    price: "₹4,999",
-    description:
-      "Learn frontend and backend development by building real-world web applications using modern technologies.",
-    technologies: [
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "React",
-      "TypeScript",
-      "Node.js",
-      "Express",
-      "PostgreSQL",
-    ],
-    modules: [
-      "HTML and CSS Fundamentals",
-      "JavaScript Programming",
-      "React and TypeScript",
-      "Frontend Application Development",
-      "Node.js and Express",
-      "REST API Development",
-      "PostgreSQL and Database Design",
-      "Authentication and Security",
-      "Deployment and Production",
-      "Final Full Stack Project",
-    ],
-  },
-  {
-    id: "frontend-development",
-    icon: Globe,
-    title: "Frontend Development",
-    duration: "6 Weeks",
-    level: "Beginner",
-    price: "₹2,499",
-    description:
-      "Master responsive user interface development and learn how to build modern websites and applications.",
-    technologies: [
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "React",
-      "TypeScript",
-      "Tailwind CSS",
-    ],
-    modules: [
-      "HTML Fundamentals",
-      "CSS and Responsive Design",
-      "JavaScript Fundamentals",
-      "Modern JavaScript",
-      "React Fundamentals",
-      "React Components and State",
-      "TypeScript Basics",
-      "Tailwind CSS",
-      "API Integration",
-      "Final Frontend Project",
-    ],
-  },
-  {
-    id: "backend-development",
-    icon: Database,
-    title: "Backend Development",
-    duration: "8 Weeks",
-    level: "Intermediate",
-    price: "₹3,499",
-    description:
-      "Learn how to build secure REST APIs, work with databases and create scalable backend applications.",
-    technologies: [
-      "Node.js",
-      "Express",
-      "REST APIs",
-      "PostgreSQL",
-      "Authentication",
-    ],
-    modules: [
-      "Node.js Fundamentals",
-      "Express.js",
-      "REST API Architecture",
-      "PostgreSQL",
-      "Database Relationships",
-      "Authentication",
-      "Authorization",
-      "API Security",
-      "Deployment",
-      "Final Backend Project",
-    ],
-  },
+import { supabase } from "../../lib/supabase";
+import useAuth from "../../hooks/useAuth";
+import type { Tables, ViewRows } from "../../types/supabase";
+
+import Badge from "../../components/ui/Badge";
+import Blueprint from "../../components/ui/Blueprint";
+import Container from "../../components/ui/Container";
+import Eyebrow from "../../components/ui/Eyebrow";
+import Reveal from "../../components/effects/Reveal";
+
+type Course = Tables<"courses">;
+type Lesson = ViewRows<"course_lessons">;
+
+const formatDuration = (totalSeconds: number | null): string => {
+  if (totalSeconds == null) return "";
+
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const ss = String(s).padStart(2, "0");
+
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+};
+
+const buttonClass =
+  "mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-400";
+
+const included = [
+  "Complete course content",
+  "Practical project-based learning",
+  "Access to every lesson video",
+  "Verifiable completion certificate",
 ];
 
 const CourseDetails = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  // Route param is still named "courseId" in AppRoutes, but we
+  // look the course up by its slug.
+  const { courseId: slug } = useParams<{ courseId: string }>();
+  const { user, loading: authLoading } = useAuth();
 
-  const course = useMemo(
-    () => courses.find((item) => item.id === courseId),
-    [courseId]
-  );
+  const [course, setCourse] = useState<Course | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [enrolled, setEnrolled] = useState(false);
 
-  if (!course) {
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // =========================================================
+  // Course + lessons (lessons come from the safe view: no URLs)
+  // =========================================================
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCourse = async () => {
+      if (!slug) return;
+
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+
+      const { data: courseData, error: courseError } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_published", true)
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      if (courseError || !courseData) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      setCourse(courseData);
+
+      const { data: lessonData, error: lessonError } = await supabase
+        .from("course_lessons")
+        .select("*")
+        .eq("course_id", courseData.id)
+        .order("order_index", { ascending: true });
+
+      if (!mounted) return;
+
+      if (lessonError) {
+        console.error("Failed to load lessons:", lessonError);
+        setError("Some course content couldn't be loaded.");
+      } else {
+        setLessons(lessonData ?? []);
+      }
+
+      setLoading(false);
+    };
+
+    void loadCourse();
+
+    return () => {
+      mounted = false;
+    };
+  }, [slug]);
+
+  // =========================================================
+  // Does this student already own the course?
+  // =========================================================
+
+  useEffect(() => {
+    if (!user || !course) {
+      setEnrolled(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const checkEnrollment = async () => {
+      const { data } = await supabase
+        .from("enrollments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("course_id", course.id)
+        .maybeSingle();
+
+      if (mounted) {
+        setEnrolled(Boolean(data));
+      }
+    };
+
+    void checkEnrollment();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user, course]);
+
+  // =========================================================
+  // States
+  // =========================================================
+
+  if (loading) {
     return (
-      <main className="min-h-[80vh] bg-slate-50 py-24 dark:bg-slate-950">
-        <div className="mx-auto max-w-2xl px-6 text-center">
-          <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Course Not Found
-            </h1>
-
-            <p className="mt-4 text-slate-600 dark:text-slate-300">
-              The course you are looking for does not exist or may have been
-              removed.
-            </p>
-
-            <Link
-              to="/courses"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-green-600 px-7 py-3 font-semibold text-white transition hover:bg-green-700"
-            >
-              <ArrowLeft size={18} />
-              Back to Courses
-            </Link>
-          </div>
+      <main className="flex min-h-[70vh] items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+          <Loader2 size={24} className="animate-spin" />
+          Loading course...
         </div>
       </main>
     );
   }
 
-  const Icon = course.icon;
+  if (notFound || !course) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 text-slate-400 dark:border-slate-700">
+            <BookOpen size={22} />
+          </div>
 
-  return (
-    <main>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-50 via-white to-blue-50 py-20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="mx-auto max-w-7xl px-6">
+          <h1 className="mt-5 text-2xl font-semibold text-slate-900 dark:text-white">
+            Course not found
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            This course doesn't exist or may have been removed.
+          </p>
+
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-green-600 dark:text-slate-300 dark:hover:text-green-400"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
           >
-            <ArrowLeft size={17} />
-            Back to Courses
+            <ArrowLeft size={16} />
+            Back to courses
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // =========================================================
+  // Course
+  // =========================================================
+
+  const isFree = course.price == null || course.price === 0;
+  const hasAccess = enrolled || (Boolean(user) && isFree);
+
+  const returnTo = encodeURIComponent(`/courses/${course.slug}`);
+  const loginPath = `/login?redirect=${returnTo}`;
+  const signupPath = `/signup?redirect=${returnTo}`;
+
+  /*
+   * One place decides what the main button does.
+   */
+  const renderAction = () => {
+    if (authLoading) {
+      return (
+        <div className="mt-6 flex justify-center text-slate-400">
+          <Loader2 size={20} className="animate-spin" />
+        </div>
+      );
+    }
+
+    if (hasAccess) {
+      return (
+        <Link to={`/learn/${course.slug}`} className={buttonClass}>
+          {enrolled ? "Continue learning" : "Start learning"}
+          <ArrowRight size={16} />
+        </Link>
+      );
+    }
+
+    if (!user) {
+      return (
+        <>
+          <Link to={isFree ? signupPath : loginPath} className={buttonClass}>
+            {isFree ? "Sign up to start free" : "Log in to enroll"}
+            <ArrowRight size={16} />
           </Link>
 
-          <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1fr_380px]">
-            {/* Course Information */}
-            <div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
-                <Icon size={32} />
-              </div>
+          <p className="mt-4 text-center text-xs text-slate-500">
+            Already have an account?{" "}
+            <Link to={loginPath} className="underline">
+              Log in
+            </Link>
+          </p>
+        </>
+      );
+    }
 
-              <h1 className="mt-7 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl dark:text-white">
+    // Logged in, paid course: online payment arrives with Razorpay
+    return (
+      <>
+        <Link to="/contact" className={buttonClass}>
+          Enroll now
+          <ArrowRight size={16} />
+        </Link>
+
+        <p className="mt-4 text-center text-xs text-slate-500">
+          Online payment is coming soon. Contact us to enroll for now.
+        </p>
+      </>
+    );
+  };
+
+  return (
+    <main className="relative">
+      {/* Background grid behind the top of the page */}
+      <div className="bg-hero-glow absolute inset-x-0 top-0 h-[420px] overflow-hidden">
+        <Blueprint />
+      </div>
+
+      <Container className="relative py-10 md:py-14">
+        <Link
+          to="/courses"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        >
+          <ArrowLeft size={15} />
+          All courses
+        </Link>
+
+        <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_340px]">
+          {/* Left column */}
+          <div>
+            <Reveal>
+              <Eyebrow label="SPE Academy" />
+
+              <h1 className="mt-3 text-4xl font-semibold leading-[1.1] text-slate-950 md:text-5xl dark:text-white">
                 {course.title}
               </h1>
 
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
                 {course.description}
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-                  <Clock3 size={17} />
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Badge>
+                  <Clock3 size={12} />
                   {course.duration}
-                </div>
+                </Badge>
 
-                <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-                  {course.level}
-                </div>
+                {course.level && <Badge tone="brand">{course.level}</Badge>}
+
+                <Badge>
+                  <PlayCircle size={12} />
+                  {lessons.length} lesson{lessons.length === 1 ? "" : "s"}
+                </Badge>
               </div>
-            </div>
+            </Reveal>
 
-            {/* Enrollment Card */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Course Fee
-              </p>
+            {/* Curriculum */}
+            <div className="mt-14">
+              <Eyebrow label="Curriculum" />
 
-              <p className="mt-3 text-4xl font-black text-slate-900 dark:text-white">
-                {course.price}
-              </p>
-
-              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Get access to the complete course content after enrollment.
-              </p>
-
-              <button
-                type="button"
-                className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-4 font-semibold text-white transition hover:bg-green-700"
-              >
-                Enroll Now
-                <ArrowRight size={18} />
-              </button>
-
-              <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                Secure payment and course access
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Course Content */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
-            {/* Modules */}
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-                Course Curriculum
+              <h2 className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">
+                What you'll learn
               </h2>
 
-              <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-                Follow a structured learning path from fundamentals to
-                practical project development.
+              {error && (
+                <div className="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                  <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              {lessons.length === 0 ? (
+                <div className="mt-6 rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Lessons for this course will be added soon.
+                </div>
+              ) : (
+                <ol className="mt-6 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                  {lessons.map((lesson, index) => (
+                    <li
+                      key={lesson.id}
+                      className="flex items-center gap-4 px-5 py-4"
+                    >
+                      <span className="tabular w-6 shrink-0 font-mono text-xs text-slate-400">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+
+                      <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">
+                        {lesson.title}
+                      </span>
+
+                      {lesson.duration != null && (
+                        <span className="tabular font-mono text-xs text-slate-500 dark:text-slate-400">
+                          {formatDuration(lesson.duration)}
+                        </span>
+                      )}
+
+                      {!hasAccess && (
+                        <Lock size={15} className="shrink-0 text-slate-400" />
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+
+          {/* Sticky enrol card */}
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-slate-400">
+                Course fee
               </p>
 
-              <div className="mt-10 space-y-4">
-                {course.modules.map((module, index) => (
-                  <div
-                    key={module}
-                    className="flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              <p className="tabular mt-2 font-mono text-4xl font-semibold text-slate-900 dark:text-white">
+                {isFree ? "Free" : `₹${course.price}`}
+              </p>
+
+              {renderAction()}
+
+              <ul className="mt-6 space-y-3 border-t border-slate-200 pt-6 dark:border-slate-800">
+                {included.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
-                        {module}
-                      </h3>
-                    </div>
-
-                    <Lock
-                      size={18}
-                      className="text-slate-400"
+                    <CheckCircle2
+                      size={17}
+                      className="mt-0.5 shrink-0 text-brand-600 dark:text-brand-400"
                     />
-                  </div>
+                    {item}
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
-
-            {/* What You Get */}
-            <aside className="h-fit rounded-3xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-950">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                What You Get
-              </h2>
-
-              <div className="mt-7 space-y-5">
-                <div className="flex gap-3">
-                  <CheckCircle
-                    className="shrink-0 text-green-500"
-                    size={21}
-                  />
-
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Complete course content
-                  </span>
-                </div>
-
-                <div className="flex gap-3">
-                  <CheckCircle
-                    className="shrink-0 text-green-500"
-                    size={21}
-                  />
-
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Practical project-based learning
-                  </span>
-                </div>
-
-                <div className="flex gap-3">
-                  <CheckCircle
-                    className="shrink-0 text-green-500"
-                    size={21}
-                  />
-
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Access to course videos
-                  </span>
-                </div>
-
-                <div className="flex gap-3">
-                  <CheckCircle
-                    className="shrink-0 text-green-500"
-                    size={21}
-                  />
-
-                  <span className="text-slate-700 dark:text-slate-300">
-                    Course completion certificate
-                  </span>
-                </div>
-              </div>
-            </aside>
-          </div>
+          </aside>
         </div>
-      </section>
-
-      {/* Technologies */}
-      <section className="bg-slate-50 py-24 dark:bg-slate-950">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Technologies You Will Learn
-          </h2>
-
-          <div className="mx-auto mt-10 flex max-w-4xl flex-wrap justify-center gap-3">
-            {course.technologies.map((technology) => (
-              <span
-                key={technology}
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-              >
-                {technology}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="rounded-3xl bg-gradient-to-r from-green-600 via-emerald-600 to-cyan-500 p-10 text-center md:p-16">
-            <BookOpen
-              size={42}
-              className="mx-auto text-white"
-            />
-
-            <h2 className="mt-6 text-3xl font-bold text-white md:text-4xl">
-              Start Learning Today
-            </h2>
-
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-              Enroll in this course and start building practical skills that
-              can help you grow your technology career.
-            </p>
-
-            <button
-              type="button"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-slate-900 transition hover:scale-105"
-            >
-              Enroll Now
-              <ArrowRight size={18} />
-            </button>
-          </div>
-        </div>
-      </section>
+      </Container>
     </main>
   );
 };

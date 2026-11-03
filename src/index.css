@@ -1,3 +1,174 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* -------------------------------- */
+/* Design tokens                    */
+/* -------------------------------- */
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
+
+  /* One primary colour. Section colours stay as small accents only. */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --radius-card: 0.75rem;
+}
+
+@theme {
+  --animate-marquee: marquee 45s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@theme {
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-gradient: gradient-shift 6s ease infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50% ; }
+  }
+}
+
+/* Soft glow that follows the cursor (needs data-spotlight on the element) */
+@utility spotlight {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: radial-gradient(
+      380px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(59 130 246 / 0.14),
+      transparent 60%
+    );
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+/* Soft brand glow used behind the hero */
+@utility bg-hero-glow {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 80% 0%, rgb(59 130 246 / 0.14), transparent 70%),
+    radial-gradient(ellipse 40% 40% at 0% 100%, rgb(59 130 246 / 0.08), transparent 70%);
+}
+
+/* -------------------------------- */
+/* Base                             */
+/* -------------------------------- */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+/* -------------------------------- */
+/* Utilities                        */
+/* -------------------------------- */
+
+/* Static blueprint grid that fades out toward the edges */
+@utility bg-blueprint {
+  background-image:
+    linear-gradient(to right, rgb(100 116 139 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(100 116 139 / 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+}
+
+/* Numbers that line up in columns (prices, durations, stats) */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------- */
+/* Text selection                   */
+/* -------------------------------- */
+
+::selection {
+  background: rgba(37, 99, 235, 0.22);
+  color: #0f172a;
+}
+
+.dark ::selection {
+  background: rgba(96, 165, 250, 0.3);
+  color: white;
+}
+
+/* -------------------------------- */
+/* Motion and print                 */
+/* -------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  header,
+  footer {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+}

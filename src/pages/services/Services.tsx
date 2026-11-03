@@ -1,187 +1,232 @@
-import {
-  Globe,
-  Smartphone,
-  Laptop,
-  Bug,
-  Wrench,
-  CheckCircle,
-  ArrowRight,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, ArrowRight, Loader2, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const services = [
+import { supabase } from "../../lib/supabase";
+import type { Tables } from "../../types/supabase";
+import { getIcon } from "../../utils/iconMap";
+
+import Blueprint from "../../components/ui/Blueprint";
+import { ButtonLink } from "../../components/ui/Button";
+import Container from "../../components/ui/Container";
+import EmptyState from "../../components/ui/EmptyState";
+import Eyebrow from "../../components/ui/Eyebrow";
+import Section from "../../components/ui/Section";
+import SectionHeading from "../../components/ui/SectionHeading";
+import Reveal from "../../components/effects/Reveal";
+
+type Service = Tables<"services">;
+
+const steps = [
   {
-    icon: Globe,
-    title: "Website Development",
-    description:
-      "Professional, responsive and SEO-friendly websites built for businesses, startups and personal brands.",
-    features: [
-      "Business Websites",
-      "Portfolio Websites",
-      "E-Commerce",
-      "Landing Pages",
-    ],
+    title: "Understand",
+    text: "We learn your requirements, goals, users and technical challenges.",
   },
   {
-    icon: Smartphone,
-    title: "App Development",
-    description:
-      "Cross-platform Android and iOS applications using modern technologies with excellent performance.",
-    features: [
-      "Android Apps",
-      "iOS Apps",
-      "React Native",
-      "Flutter",
-    ],
+    title: "Build",
+    text: "We design and develop the solution using appropriate technologies and practices.",
   },
   {
-    icon: Laptop,
-    title: "Software Development",
-    description:
-      "Custom software solutions designed to automate business operations and improve productivity.",
-    features: [
-      "ERP Systems",
-      "CRM",
-      "Desktop Software",
-      "Automation",
-    ],
-  },
-  {
-    icon: Bug,
-    title: "Bug Fixing",
-    description:
-      "Debugging, optimization and maintenance for existing websites and applications.",
-    features: [
-      "Performance Optimization",
-      "Security Fixes",
-      "Error Fixing",
-      "Code Refactoring",
-    ],
-  },
-  {
-    icon: Wrench,
-    title: "Technical Consulting",
-    description:
-      "Professional consultation to help choose the right technologies and architecture for your project.",
-    features: [
-      "System Architecture",
-      "Deployment",
-      "Code Review",
-      "Technical Guidance",
-    ],
+    title: "Deliver",
+    text: "We test, refine and deliver a reliable solution ready for real-world use.",
   },
 ];
 
 const Services = () => {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: fetchError } = await supabase
+          .from("services")
+          .select("*")
+          .eq("is_published", true)
+          .order("order_index", { ascending: true });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (mounted) {
+          setServices(data ?? []);
+        }
+      } catch (err) {
+        console.error("Failed to load services:", err);
+
+        if (mounted) {
+          setError("Unable to load services right now. Please try again later.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadServices();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <main>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-violet-50 py-24 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <span className="inline-flex rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-            Our Services
-          </span>
+      <section className="bg-hero-glow relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+        <Blueprint />
 
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl dark:text-white">
-            Complete Digital Solutions
-          </h1>
+        <Container className="relative py-14 md:py-20">
+          <Reveal>
+            <Eyebrow label="Our services" />
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-            We help startups, businesses and individuals transform ideas into
-            modern digital products through reliable technology solutions.
-          </p>
-        </div>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] text-slate-950 sm:text-5xl dark:text-white">
+              Complete{" "}
+              <span className="text-brand-600 dark:text-brand-400">
+                digital solutions.
+              </span>
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+              We help startups, businesses and individuals turn ideas into
+              reliable digital products through practical technology, thoughtful
+              design and scalable development.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink to="/contact">
+                Start a project
+                <ArrowRight size={16} />
+              </ButtonLink>
+
+              <ButtonLink to="/portfolio" variant="outline">
+                View our work
+              </ButtonLink>
+            </div>
+          </Reveal>
+        </Container>
       </section>
 
       {/* Services */}
-      <section className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-8">
-            {services.map((service) => {
-              const Icon = service.icon;
+      <Section>
+        <SectionHeading
+          eyebrow="What we do"
+          title="Technology built around your needs"
+          description="From websites and mobile applications to custom software and technical support, we provide focused solutions for real business requirements."
+        />
+
+        {loading && (
+          <div className="mt-12 flex items-center justify-center gap-3 text-slate-500">
+            <Loader2 size={22} className="animate-spin" />
+            Loading services...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="mt-12 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && services.length === 0 && (
+          <EmptyState
+            icon={Wrench}
+            message="Our services will appear here soon."
+          />
+        )}
+
+        {!loading && !error && services.length > 0 && (
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {services.map((service, index) => {
+              const Icon = getIcon(service.icon);
 
               return (
-                <article
-                  key={service.title}
-                  className="grid items-center gap-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl md:p-10 lg:grid-cols-2 dark:border-slate-800 dark:bg-slate-900"
-                >
-                  {/* Service Information */}
-                  <div>
-                    <div className="mb-6 inline-flex rounded-2xl bg-blue-100 p-5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                      <Icon size={42} />
+                <Reveal key={service.id} delay={Math.min(index, 5) * 70}>
+                  <article
+                    data-spotlight
+                    className="spotlight group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-brand-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-500/60"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-brand-600 transition-colors group-hover:border-brand-400 group-hover:bg-brand-50 dark:border-slate-700 dark:text-brand-400 dark:group-hover:bg-brand-500/10">
+                      <Icon size={20} strokeWidth={1.8} />
                     </div>
 
-                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+                    <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">
                       {service.title}
                     </h2>
 
-                    <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+                    <p className="mt-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
                       {service.description}
                     </p>
 
                     <Link
                       to="/contact"
-                      className="mt-8 inline-flex items-center gap-2 font-semibold text-blue-600 transition hover:gap-3 dark:text-blue-400"
+                      className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
                     >
-                      Discuss Your Project
-                      <ArrowRight size={18} />
+                      Discuss your project
+                      <ArrowRight size={15} />
                     </Link>
-                  </div>
-
-                  {/* Features */}
-                  <div className="rounded-2xl bg-slate-50 p-6 md:p-8 dark:bg-slate-950">
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                      What We Offer
-                    </h3>
-
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                      {service.features.map((feature) => (
-                        <div
-                          key={feature}
-                          className="flex items-center gap-3"
-                        >
-                          <CheckCircle
-                            size={20}
-                            className="shrink-0 text-green-500"
-                          />
-
-                          <span className="text-slate-700 dark:text-slate-300">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </article>
+                  </article>
+                </Reveal>
               );
             })}
           </div>
+        )}
+      </Section>
+
+      {/* Process */}
+      <Section tone="muted">
+        <SectionHeading
+          eyebrow="Our process"
+          title="From idea to solution"
+          description="A simple and transparent process focused on understanding your requirements and delivering useful technology."
+        />
+
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {steps.map((step, index) => (
+            <Reveal key={step.title} delay={index * 100}>
+              <p className="font-mono text-xs text-slate-400">0{index + 1}</p>
+
+              <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                {step.title}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                {step.text}
+              </p>
+            </Reveal>
+          ))}
         </div>
-      </section>
+      </Section>
 
       {/* CTA */}
-      <section className="pb-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 p-10 text-center md:p-14">
-            <h2 className="text-3xl font-bold text-white md:text-4xl">
-              Have a Project in Mind?
+      <Section bordered={false}>
+        <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-slate-200 bg-white p-8 md:flex-row md:items-center dark:border-slate-800 dark:bg-slate-900">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              Have a project in mind?
             </h2>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-              Let's discuss your requirements and build a digital solution
-              that helps your business grow.
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Tell us what you want to build, improve or fix. We'll help you
+              find a practical technology solution.
             </p>
-
-            <Link
-              to="/contact"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-slate-900 transition hover:scale-105"
-            >
-              Request a Quote
-              <ArrowRight size={18} />
-            </Link>
           </div>
+
+          <ButtonLink to="/contact" className="shrink-0">
+            Request a quote
+            <ArrowRight size={16} />
+          </ButtonLink>
         </div>
-      </section>
+      </Section>
     </main>
   );
 };

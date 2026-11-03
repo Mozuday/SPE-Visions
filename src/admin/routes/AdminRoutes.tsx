@@ -4,39 +4,41 @@ import AdminLayout from "../layouts/AdminLayout";
 
 import AdminLogin from "../pages/AdminLogin";
 import Dashboard from "../pages/Dashboard";
+import Settings from "../pages/Settings";
 
 import ManageServices from "../pages/services/ManageServices";
 import ManageCourses from "../pages/courses/ManageCourses";
 import ManageVideos from "../pages/courses/ManageVideos";
 import ManageInternships from "../pages/internships/ManageInternships";
+import ManageApplications from "../pages/internships/ManageApplications";
 import ManageJobs from "../pages/jobs/ManageJobs";
 import ManageBlogs from "../pages/blogs/ManageBlogs";
+import ManagePortfolio from "../pages/portfolio/ManagePortfolio";
+import ManageMessages from "../pages/inbox/ManageMessages";
+import ManageStudents from "../pages/students/ManageStudents";
+import ManageEnrollments from "../pages/students/ManageEnrollments";
+import ManageCertificates from "../pages/students/ManageCertificates";
 
 const AdminRoutes = () => {
   return (
     <Routes>
-      {/* Admin Login */}
-      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="login" element={<AdminLogin />} />
 
-      {/* Admin Dashboard */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
-
-        {/* Services */}
+        <Route path="messages" element={<ManageMessages />} />
+        <Route path="applications" element={<ManageApplications />} />
+        <Route path="students" element={<ManageStudents />} />
+        <Route path="enrollments" element={<ManageEnrollments />} />
+        <Route path="certificates" element={<ManageCertificates />} />
         <Route path="services" element={<ManageServices />} />
-
-        {/* Courses */}
+        <Route path="portfolio" element={<ManagePortfolio />} />
         <Route path="courses" element={<ManageCourses />} />
         <Route path="courses/:courseId/videos" element={<ManageVideos />} />
-
-        {/* Internships */}
         <Route path="internships" element={<ManageInternships />} />
-
-        {/* Jobs */}
         <Route path="jobs" element={<ManageJobs />} />
-
-        {/* Blogs */}
         <Route path="blogs" element={<ManageBlogs />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );

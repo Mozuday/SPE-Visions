@@ -1,123 +1,120 @@
-import hero from "../../assets/images/hero.png";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Database, Globe, Rocket } from "lucide-react";
+
 import { ButtonLink } from "../ui/Button";
+import Blueprint from "../ui/Blueprint";
+import Container from "../ui/Container";
+import Eyebrow from "../ui/Eyebrow";
+import Reveal from "../effects/Reveal";
 
-const Hero = () => {
-  return (
-    <section className="relative overflow-hidden border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+import TerminalDemo from "./TerminalDemo";
 
-      {/* Subtle background grid */}
-      <div className="pointer-events-none absolute inset-0 -z-0 opacity-40 dark:opacity-20">
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)]
-            bg-[size:64px_64px]
-            dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)]
-          "
-        />
-      </div>
+const capabilities = [
+  "Web",
+  "Apps",
+  "Software",
+  "Consulting",
+  "Courses",
+  "Internships",
+];
 
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-72px)] max-w-7xl items-center gap-14 px-5 py-20 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:px-8 lg:py-24">
+/* Decorative chips that drift around the terminal (desktop only) */
+const chips = [
+  { label: "Frontend", icon: Globe, position: "-left-6 -top-4", delay: "0s" },
+  { label: "Database", icon: Database, position: "-right-4 top-1/2", delay: "1.5s" },
+  { label: "Deploy", icon: Rocket, position: "-bottom-4 left-10", delay: "3s" },
+];
 
-        {/* Left Content */}
-        <div className="max-w-2xl">
+const Hero = () => (
+  <section className="bg-hero-glow relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+    <Blueprint />
 
-          {/* Eyebrow */}
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500" />
+    <Container className="relative py-16 md:py-24">
+      <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+        {/* Copy */}
+        <div>
+          <Reveal>
+            <p className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white/70 px-3 py-1.5 font-mono text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              Digital engineering studio
+            </p>
+          </Reveal>
 
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-              SPE Visions
-            </span>
-          </div>
+          <Reveal delay={80}>
+            <h1 className="mt-5 text-4xl font-semibold leading-[1.1] text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
+              Engineering digital products{" "}
+              <span className="animate-gradient bg-gradient-to-r from-brand-600 via-brand-400 to-brand-600 bg-[length:200%_auto] bg-clip-text text-transparent">
+                that scale.
+              </span>
+            </h1>
+          </Reveal>
 
-          {/* Heading */}
-          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-slate-950 sm:text-5xl md:text-6xl lg:text-7xl dark:text-white">
-            Building digital
-            <span className="block text-blue-600 dark:text-blue-500">
-              solutions that matter.
-            </span>
-          </h1>
+          <Reveal delay={160}>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-400">
+              SPE Visions builds websites, applications and software systems
+              for businesses that need more than a template, and trains
+              developers through real projects.
+            </p>
+          </Reveal>
 
-          {/* Description */}
-          <p className="mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8 dark:text-slate-400">
-            We design and develop modern websites, applications and software
-            solutions that help businesses build a stronger digital presence.
-          </p>
+          <Reveal delay={240}>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink to="/contact" className="group">
+                Let's build
+                <ArrowRight
+                  size={16}
+                  className="transition-transform duration-150 group-hover:translate-x-0.5"
+                />
+              </ButtonLink>
 
-          {/* Buttons */}
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-
-            <ButtonLink
-              to="/contact"
-              variant="primary"
-              className="w-full sm:w-auto"
-            >
-              Start a Project
-              <ArrowRight size={17} />
-            </ButtonLink>
-
-            <ButtonLink
-              to="/services"
-              variant="outline"
-              className="w-full sm:w-auto"
-            >
-              Explore Services
-            </ButtonLink>
-
-          </div>
-
-          {/* Trust Points */}
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-6">
-
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <CheckCircle2
-                size={17}
-                className="text-blue-600 dark:text-blue-500"
-              />
-              Business-focused solutions
+              <ButtonLink to="/services" variant="outline">
+                View services
+              </ButtonLink>
             </div>
+          </Reveal>
 
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <CheckCircle2
-                size={17}
-                className="text-blue-600 dark:text-blue-500"
-              />
-              Practical technical support
+          <Reveal delay={320}>
+            <div className="mt-10">
+              <Eyebrow label="What we do" />
+
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {capabilities.map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-md border border-slate-200 bg-white/70 px-2.5 py-1 font-mono text-xs text-slate-600 transition-all duration-150 hover:-translate-y-0.5 hover:border-brand-400 hover:text-brand-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:border-brand-500/60 dark:hover:text-brand-300"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-
-          </div>
-
+          </Reveal>
         </div>
 
-        {/* Right Visual */}
-        <div className="relative flex items-center justify-center lg:justify-end">
+        {/* Live terminal with floating chips */}
+        <Reveal delay={200}>
+          <div className="relative">
+            <TerminalDemo />
 
-          {/* Image Container */}
-          <div className="relative w-full max-w-xl">
+            {chips.map((chip) => {
+              const Icon = chip.icon;
 
-            {/* Subtle border frame */}
-            <div className="absolute -inset-4 -z-10 rounded-3xl border border-slate-200 dark:border-slate-800" />
-
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-xl shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20">
-
-              <img
-                src={hero}
-                alt="SPE Visions digital solutions"
-                className="h-auto w-full object-contain"
-              />
-
-            </div>
-
+              return (
+                <div
+                  key={chip.label}
+                  aria-hidden="true"
+                  style={{ animationDelay: chip.delay }}
+                  className={`absolute ${chip.position} hidden animate-float items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-700 shadow-md md:flex dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200`}
+                >
+                  <Icon size={14} className="text-brand-600 dark:text-brand-400" />
+                  {chip.label}
+                </div>
+              );
+            })}
           </div>
-
-        </div>
-
+        </Reveal>
       </div>
-    </section>
-  );
-};
+    </Container>
+  </section>
+);
 
 export default Hero;

@@ -1,138 +1,150 @@
-import {
-  BriefcaseBusiness,
-  Monitor,
-  Code2,
-  Database,
-  Smartphone,
-  ArrowUpRight,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, CalendarClock, Clock3, Loader2, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import Card from "../ui/Card";
-import SectionTitle from "../ui/SectionTitle";
+import { supabase } from "../../lib/supabase";
+import type { Tables } from "../../types/supabase";
 
-const internships = [
-  {
-    icon: Monitor,
-    title: "Web Design",
-    description:
-      "Learn modern UI and UX principles while working on responsive and user-friendly digital experiences.",
-  },
-  {
-    icon: Code2,
-    title: "Frontend Development",
-    description:
-      "Build practical interfaces using HTML, CSS, JavaScript, React and modern frontend tools.",
-  },
-  {
-    icon: Database,
-    title: "Backend Development",
-    description:
-      "Learn how APIs, databases, authentication and server-side applications work together.",
-  },
-  {
-    icon: Smartphone,
-    title: "App Development",
-    description:
-      "Explore mobile application development and learn how modern apps are designed and built.",
-  },
-];
+import Badge from "../ui/Badge";
+import Section from "../ui/Section";
+import SectionHeading from "../ui/SectionHeading";
+import Reveal from "../effects/Reveal";
+
+type Internship = Tables<"internships">;
+
+const isClosed = (internship: Internship) => {
+  if (!internship.deadline) return false;
+
+  const end = new Date(`${internship.deadline}T23:59:59`);
+
+  return !Number.isNaN(end.getTime()) && end.getTime() < Date.now();
+};
+
+const formatDeadline = (value: string) => {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 const InternshipPreview = () => {
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("internships")
+        .select("*")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (!mounted) return;
+
+      if (error) {
+        console.error("Failed to load internship preview:", error);
+      } else {
+        // Closed ones are filtered out, then the newest four are shown
+        setInternships(
+          (data ?? []).filter((item) => !isClosed(item)).slice(0, 4)
+        );
+      }
+
+      setLoading(false);
+    };
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!loading && internships.length === 0) return null;
+
   return (
-    <section className="border-b border-slate-200 bg-slate-50 py-24 dark:border-slate-800 dark:bg-slate-900/40">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <Section>
+      <SectionHeading
+        index="04"
+        eyebrow="Internships"
+        title="Start your career with real experience"
+        description="Work on practical projects, build your portfolio and learn from working developers."
+        action={
+          <Link
+            to="/internships"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
+          >
+            All internships
+            <ArrowRight size={15} />
+          </Link>
+        }
+      />
 
-        {/* Section Header */}
-        <SectionTitle
-          eyebrow="Internship Program"
-          title="Learn by building real projects"
-          description="Our internship program is designed to help students and aspiring developers gain practical experience, improve their technical skills and build meaningful projects."
-        />
-
-        {/* Internship Areas */}
-        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-
-          {internships.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <Card
-                key={item.title}
-                className="group p-7"
+      {loading ? (
+        <div className="mt-12 flex justify-center text-slate-500">
+          <Loader2 size={22} className="animate-spin" />
+        </div>
+      ) : (
+        <div className="mt-12 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+          {internships.map((internship, index) => (
+            <Reveal key={internship.id} delay={index * 60}>
+              <Link
+                to={`/internships/apply?internship=${internship.slug}`}
+                className="group flex flex-col gap-4 p-6 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-slate-800/50"
               >
+                <div className="min-w-0">
+                  {internship.category && (
+                    <p className="font-mono text-xs uppercase tracking-[0.14em] text-brand-600 dark:text-brand-400">
+                      {internship.category}
+                    </p>
+                  )}
 
-                {/* Icon */}
-                <div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition-colors group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:group-hover:border-blue-900 dark:group-hover:bg-blue-950/40 dark:group-hover:text-blue-400">
-                  <Icon size={22} strokeWidth={1.8} />
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    {internship.title}
+                  </h3>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {internship.duration && (
+                      <Badge>
+                        <Clock3 size={12} />
+                        {internship.duration}
+                      </Badge>
+                    )}
+
+                    {internship.seats !== null && (
+                      <Badge>
+                        <Users size={12} />
+                        {internship.seats} seats
+                      </Badge>
+                    )}
+
+                    {internship.deadline && (
+                      <Badge>
+                        <CalendarClock size={12} />
+                        Apply by {formatDeadline(internship.deadline)}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                {/* Title */}
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {item.title}
-                </h3>
-
-                {/* Description */}
-                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
-                  {item.description}
-                </p>
-
-              </Card>
-            );
-          })}
-
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-600 transition-all group-hover:gap-2.5 dark:text-brand-400">
+                  Apply now
+                  <ArrowRight size={15} />
+                </span>
+              </Link>
+            </Reveal>
+          ))}
         </div>
-
-        {/* Internship CTA */}
-        <div className="mt-16 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-
-          <div className="grid items-center gap-10 p-8 sm:p-10 lg:grid-cols-[1fr_auto] lg:p-12">
-
-            {/* Content */}
-            <div className="flex gap-5">
-
-              <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white sm:flex dark:bg-white dark:text-slate-950">
-                <BriefcaseBusiness size={22} />
-              </div>
-
-              <div>
-
-                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                  Start your journey
-                </p>
-
-                <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-                  Ready to gain practical experience?
-                </h3>
-
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-400">
-                  Apply for an internship and work on practical projects that
-                  can help strengthen your technical skills and portfolio.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* CTA */}
-            <Link
-              to="/internships/apply"
-              className="group inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600 dark:bg-white dark:text-slate-950 dark:hover:bg-blue-500 dark:hover:text-white"
-            >
-              Apply for Internship
-
-              <ArrowUpRight
-                size={17}
-                className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-              />
-            </Link>
-
-          </div>
-
-        </div>
-
-      </div>
-    </section>
+      )}
+    </Section>
   );
 };
 

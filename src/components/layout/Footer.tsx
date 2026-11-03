@@ -1,224 +1,123 @@
 import { Link } from "react-router-dom";
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Send,
-  ArrowUpRight,
-} from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
+
+import { COMPANY } from "../../constants/company";
+import { footerNavigation } from "../../constants/navigation";
+import { socialLinks } from "../../constants/social";
+
+const linkClass =
+  "text-sm text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
 
 const Footer = () => {
+  const phoneHref = COMPANY.phone
+    ? `tel:${COMPANY.phone.replace(/[^\d+]/g, "")}`
+    : "";
+
   return (
     <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
-
-        {/* Main Footer */}
+      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-12">
-
           {/* Brand */}
-          <div className="lg:col-span-5">
-
-            <Link
-              to="/"
-              className="inline-flex items-center gap-3"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white dark:bg-white dark:text-slate-950">
+          <div className="lg:col-span-4">
+            <Link to="/" className="inline-flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-900 font-mono text-xs font-bold text-white dark:bg-white dark:text-slate-950">
                 SP
-              </div>
+              </span>
 
-              <div>
-                <p className="text-lg font-bold leading-none text-slate-900 dark:text-white">
-                  SPE
-                </p>
-
-                <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Visions
-                </p>
-              </div>
+              <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">
+                SPE <span className="text-slate-400">Visions</span>
+              </span>
             </Link>
 
-            <p className="mt-6 max-w-md text-sm leading-7 text-slate-600 dark:text-slate-400">
-              We build practical digital solutions for businesses and
-              individuals, from modern websites and applications to custom
-              software and technical support.
+            <p className="mt-5 max-w-sm text-sm leading-7 text-slate-600 dark:text-slate-400">
+              We build websites, apps and custom software, and train the next
+              generation of developers through real projects.
             </p>
 
-            <Link
-              to="/contact"
-              className="group mt-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-            >
-              Start a Project
-
-              <ArrowUpRight
-                size={16}
-                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-              />
-            </Link>
-
+            {socialLinks.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {socialLinks.map(({ label, url, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    title={label}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-white"
+                  >
+                    <Icon size={16} />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Navigation */}
-          <div className="lg:col-span-2">
+          {/* Links */}
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-4 lg:col-span-5">
+            {footerNavigation.map((group) => (
+              <div key={group.title}>
+                <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
+                  {group.title}
+                </h3>
 
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Company
-            </h3>
-
-            <nav className="mt-5 flex flex-col gap-3">
-
-              <Link
-                to="/"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                Home
-              </Link>
-
-              <Link
-                to="/services"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                Services
-              </Link>
-
-              <Link
-                to="/courses"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                Courses
-              </Link>
-
-              <Link
-                to="/internships"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                Internships
-              </Link>
-
-              <Link
-                to="/about"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                About Us
-              </Link>
-
-              <Link
-                to="/contact"
-                className="text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                Contact
-              </Link>
-
-            </nav>
-
-          </div>
-
-          {/* Services */}
-          <div className="lg:col-span-2">
-
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Services
-            </h3>
-
-            <div className="mt-5 flex flex-col gap-3">
-
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Website Development
-              </span>
-
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                App Development
-              </span>
-
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Software Development
-              </span>
-
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Bug Fixing
-              </span>
-
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Technical Consulting
-              </span>
-
-            </div>
-
+                <nav className="mt-4 flex flex-col gap-3">
+                  {group.links.map((link) => (
+                    <Link
+                      key={`${group.title}-${link.label}`}
+                      to={link.path}
+                      className={linkClass}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+            ))}
           </div>
 
           {/* Contact */}
           <div className="lg:col-span-3">
-
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Get in Touch
+            <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
+              Contact
             </h3>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-4 space-y-3">
+              {COMPANY.email && (
+                <a
+                  href={`mailto:${COMPANY.email}`}
+                  className={`${linkClass} flex items-center gap-2.5 break-all`}
+                >
+                  <Mail size={15} className="shrink-0" />
+                  {COMPANY.email}
+                </a>
+              )}
 
-              <a
-                href="mailto:contact@speVisions.in"
-                className="flex items-center gap-3 text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                <Mail size={17} />
-                contact@speVisions.in
-              </a>
+              {COMPANY.phone && (
+                <a
+                  href={phoneHref}
+                  className={`${linkClass} flex items-center gap-2.5`}
+                >
+                  <Phone size={15} className="shrink-0" />
+                  {COMPANY.phone}
+                </a>
+              )}
 
-              <a
-                href="tel:+91XXXXXXXXXX"
-                className="flex items-center gap-3 text-sm text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-              >
-                <Phone size={17} />
-                +91 XXXXX XXXXX
-              </a>
-
-              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
-                <MapPin size={17} />
+              <p className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-400">
+                <MapPin size={15} className="shrink-0" />
                 India
-              </div>
-
+              </p>
             </div>
-
-            {/* Telegram */}
-            <a
-              href="https://t.me/yourusername"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400"
-            >
-              <Send size={16} />
-              Contact us on Telegram
-            </a>
-
           </div>
-
         </div>
 
-        {/* Bottom */}
-        <div className="mt-16 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-
-          <p className="text-slate-500 dark:text-slate-500">
-            © {new Date().getFullYear()} SPE Visions. All rights reserved.
+        <div className="mt-12 flex flex-col gap-2 border-t border-slate-200 pt-6 text-xs text-slate-500 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
           </p>
 
-          <div className="flex gap-6">
-
-            <Link
-              to="/about"
-              className="text-slate-500 transition-colors hover:text-slate-900 dark:hover:text-white"
-            >
-              About
-            </Link>
-
-            <Link
-              to="/contact"
-              className="text-slate-500 transition-colors hover:text-slate-900 dark:hover:text-white"
-            >
-              Contact
-            </Link>
-
-          </div>
-
+          <p className="font-mono">Built with care in India</p>
         </div>
-
       </div>
     </footer>
   );

@@ -1,297 +1,504 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  AlertCircle,
+  ArrowRight,
   BriefcaseBusiness,
+  ClipboardList,
   FileText,
+  FolderKanban,
   GraduationCap,
   LayoutDashboard,
-  Settings,
-  TrendingUp,
+  Loader2,
+  MessageSquare,
+  UserCheck,
   Users,
   Wrench,
 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import type { LucideIcon } from "lucide-react";
 
-type StatCounts = {
-  services: number;
-  courses: number;
-  internships: number;
-  blogs: number;
-  users: number;
+import { supabase } from "../../lib/supabase";
+import { formatRelativeTime } from "../../utils/formatters";
+import { statusColorMap } from "../../utils/helpers";
+import type { StatusVariant } from "../../utils/helpers";
+
+type Totals = {
+  published: number;
+  total: number;
 };
 
-const quickActions = [
+type Stats = {
+  services: Totals;
+  portfolio: Totals;
+  courses: Totals;
+  internships: Totals;
+  jobs: Totals;
+  blogs: Totals;
+  users: number;
+  newMessages: number;
+  pendingApplications: number;
+};
+
+type RecentMessage = {
+  id: string;
+  name: string;
+  subject: string | null;
+  status: StatusVariant;
+  created_at: string;
+};
+
+type RecentApplication = {
+  id: string;
+  full_name: string;
+  status: StatusVariant;
+  created_at: string;
+  internships: { title: string } | null;
+};
+
+type ContentTable =
+  | "services"
+  | "portfolio_projects"
+  | "courses"
+  | "internships"
+  | "jobs"
+  | "blogs";
+
+const countRows = (table: ContentTable, publishedOnly: boolean) => {
+  const query = supabase
+    .from(table)
+    .select("id", { count: "exact", head: true });
+
+  return publishedOnly ? query.eq("is_published", true) : query;
+};
+
+const contentCards: {
+  key: keyof Pick<
+    Stats,
+    "services" | "portfolio" | "courses" | "internships" | "jobs" | "blogs"
+  >;
+  title: string;
+  href: string;
+  icon: LucideIcon;
+}[] = [
+  { key: "services", title: "Services", href: "/admin/services", icon: Wrench },
   {
-    title: "Manage Services",
-    description: "Add, edit or remove your services.",
-    href: "/admin/services",
-    icon: Wrench,
+    key: "portfolio",
+    title: "Portfolio",
+    href: "/admin/portfolio",
+    icon: FolderKanban,
   },
   {
-    title: "Manage Courses",
-    description: "Manage courses and learning content.",
+    key: "courses",
+    title: "Courses",
     href: "/admin/courses",
     icon: GraduationCap,
   },
   {
-    title: "Manage Internships",
-    description: "Manage internship programs and applications.",
+    key: "internships",
+    title: "Internships",
     href: "/admin/internships",
-    icon: BriefcaseBusiness,
+    icon: UserCheck,
   },
-  {
-    title: "Manage Blogs",
-    description: "Publish and manage your latest articles.",
-    href: "/admin/blogs",
-    icon: FileText,
-  },
+  { key: "jobs", title: "Jobs", href: "/admin/jobs", icon: BriefcaseBusiness },
+  { key: "blogs", title: "Blogs", href: "/admin/blogs", icon: FileText },
 ];
 
+const StatusBadge = ({ status }: { status: StatusVariant }) => (
+  <span
+    className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${statusColorMap[status]}`}
+  >
+    {status}
+  </span>
+);
+
 const Dashboard = () => {
-  const [counts, setCounts] = useState<StatCounts | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [messages, setMessages] = useState<RecentMessage[]>([]);
+  const [applications, setApplications] = useState<RecentApplication[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const loadCounts = async () => {
+    const loadDashboard = async () => {
       try {
-        // head: true + count: "exact" fetches only the row count,
-        // not the actual rows — fast and cheap for dashboard stats.
-        const [servicesRes, coursesRes, internshipsRes, blogsRes, usersRes] =
-          await Promise.all([
-            supabase
-              .from("services")
-              .select("*", { count: "exact", head: true })
-              .eq("is_published", true),
-            supabase
-              .from("courses")
-              .select("*", { count: "exact", head: true })
-              .eq("is_published", true),
-            supabase
-              .from("internships")
-              .select("*", { count: "exact", head: true })
-              .eq("is_published", true),
-            supabase
-              .from("blogs")
-              .select("*", { count: "exact", head: true })
-              .eq("is_published", true),
-            supabase.from("profiles").select("*", { count: "exact", head: true }),
-          ]);
+        setLoading(true);
+        setError(null);
 
-        if (!isMounted) return;
+        const tables: ContentTable[] = [
+          "services",
+          "portfolio_projects",
+          "courses",
+          "internships",
+          "jobs",
+          "blogs",
+        ];
 
-        setCounts({
-          services: servicesRes.count ?? 0,
-          courses: coursesRes.count ?? 0,
-          internships: internshipsRes.count ?? 0,
-          blogs: blogsRes.count ?? 0,
-          users: usersRes.count ?? 0,
+        const [
+          published,
+          totals,
+          usersRes,
+          newMessagesRes,
+          pendingRes,
+          recentMessagesRes,
+          recentApplicationsRes,
+        ] = await Promise.all([
+          Promise.all(tables.map((table) => countRows(table, true))),
+          Promise.all(tables.map((table) => countRows(table, false))),
+          supabase.from("profiles").select("id", { count: "exact", head: true }),
+          supabase
+            .from("contact_messages")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "new"),
+          supabase
+            .from("internship_applications")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending"),
+          supabase
+            .from("contact_messages")
+            .select("id, name, subject, status, created_at")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("internship_applications")
+            .select("id, full_name, status, created_at, internships(title)")
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+
+        /*
+         * Any failed query means the numbers can't be trusted,
+         * so surface it instead of silently showing zeros.
+         */
+        const failed = [
+          ...published,
+          ...totals,
+          usersRes,
+          newMessagesRes,
+          pendingRes,
+          recentMessagesRes,
+          recentApplicationsRes,
+        ].find((result) => result.error);
+
+        if (failed?.error) {
+          throw failed.error;
+        }
+
+        if (!mounted) return;
+
+        const totalsFor = (index: number): Totals => ({
+          published: published[index].count ?? 0,
+          total: totals[index].count ?? 0,
         });
+
+        setStats({
+          services: totalsFor(0),
+          portfolio: totalsFor(1),
+          courses: totalsFor(2),
+          internships: totalsFor(3),
+          jobs: totalsFor(4),
+          blogs: totalsFor(5),
+          users: usersRes.count ?? 0,
+          newMessages: newMessagesRes.count ?? 0,
+          pendingApplications: pendingRes.count ?? 0,
+        });
+
+        setMessages((recentMessagesRes.data ?? []) as RecentMessage[]);
+        setApplications(
+          (recentApplicationsRes.data ?? []) as unknown as RecentApplication[]
+        );
       } catch (err) {
-        console.error("Failed to load dashboard stats:", err);
-        if (isMounted) setLoadError("Couldn't load live stats. Showing 0 for now.");
+        console.error("Failed to load dashboard:", err);
+
+        if (mounted) {
+          setError("Couldn't load live stats. Please refresh and try again.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadCounts();
+    void loadDashboard();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, []);
 
-  const stats = [
-    {
-      title: "Total Services",
-      value: counts?.services ?? "—",
-      description: "Active services",
-      icon: Wrench,
-    },
-    {
-      title: "Total Courses",
-      value: counts?.courses ?? "—",
-      description: "Published courses",
-      icon: GraduationCap,
-    },
-    {
-      title: "Internships",
-      value: counts?.internships ?? "—",
-      description: "Active programs",
-      icon: BriefcaseBusiness,
-    },
-    {
-      title: "Blog Posts",
-      value: counts?.blogs ?? "—",
-      description: "Published articles",
-      icon: FileText,
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+          <Loader2 size={24} className="animate-spin" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
-            <LayoutDashboard size={22} />
-          </div>
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
-              Dashboard
-            </h1>
-
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Welcome back. Here's an overview of SPE Visions.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
+          <LayoutDashboard size={22} />
         </div>
 
-        {loadError && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-            {loadError}
-          </p>
-        )}
-      </div>
-
-      {/* Statistics */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-
-          return (
-            <div
-              key={stat.title}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {stat.title}
-                  </p>
-
-                  <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
-                    {stat.value}
-                  </p>
-
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {stat.description}
-                  </p>
-                </div>
-
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
-                  <Icon size={21} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid gap-6 xl:grid-cols-3">
-        {/* Quick Actions */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-2">
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Quick Actions
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Quickly access the main content management sections.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-
-              return (
-                <Link
-                  key={action.title}
-                  to={action.href}
-                  className="group rounded-xl border border-slate-200 p-5 transition hover:border-cyan-500 hover:shadow-md dark:border-slate-800 dark:hover:border-cyan-500"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition group-hover:bg-cyan-50 group-hover:text-cyan-600 dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-cyan-500/10 dark:group-hover:text-cyan-400">
-                      <Icon size={21} />
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
-                        {action.title}
-                      </h3>
-
-                      <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        {action.description}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Overview */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            Platform Overview
-          </h2>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">
+            Dashboard
+          </h1>
 
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Current platform status.
+            Welcome back. Here's an overview of SPE Visions.
           </p>
+        </div>
+      </div>
 
-          <div className="mt-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400">
-                  <TrendingUp size={18} />
+      {error && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Needs attention */}
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Link
+          to="/admin/messages"
+          className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-cyan-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                New messages
+              </p>
+
+              <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-white">
+                {stats?.newMessages ?? "—"}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                {stats && stats.newMessages > 0
+                  ? "Waiting for a reply"
+                  : "You're all caught up"}
+              </p>
+            </div>
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
+              <MessageSquare size={21} />
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          to="/admin/applications"
+          className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-cyan-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Pending applications
+              </p>
+
+              <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-white">
+                {stats?.pendingApplications ?? "—"}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                {stats && stats.pendingApplications > 0
+                  ? "Waiting for review"
+                  : "Nothing to review"}
+              </p>
+            </div>
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <ClipboardList size={21} />
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Content */}
+      <div>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
+          Content
+        </h2>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {contentCards.map((card) => {
+            const Icon = card.icon;
+            const totals = stats?.[card.key];
+
+            return (
+              <Link
+                key={card.key}
+                to={card.href}
+                className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-cyan-500 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition group-hover:bg-cyan-50 group-hover:text-cyan-600 dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-cyan-500/10 dark:group-hover:text-cyan-400">
+                  <Icon size={22} />
                 </div>
 
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Website
-                </span>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    {card.title}
+                  </p>
 
-              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-600 dark:bg-green-500/10 dark:text-green-400">
-                Active
+                  <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
+                    {totals ? totals.published : "—"}
+                    <span className="ml-1 text-sm font-medium text-slate-400">
+                      {totals ? `/ ${totals.total} published` : ""}
+                    </span>
+                  </p>
+                </div>
+
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-cyan-500"
+                />
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recent activity */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* Messages */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Recent messages
+            </h2>
+
+            <Link
+              to="/admin/messages"
+              className="text-sm font-semibold text-blue-600 hover:underline dark:text-cyan-400"
+            >
+              View all
+            </Link>
+          </div>
+
+          {messages.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              No messages yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {messages.map((message) => (
+                <Link
+                  key={message.id}
+                  to="/admin/messages"
+                  className="flex items-center justify-between gap-4 py-3.5 transition hover:opacity-80"
+                >
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate text-slate-900 dark:text-white ${
+                        message.status === "new" ? "font-bold" : "font-medium"
+                      }`}
+                    >
+                      {message.name}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {message.subject || "No subject"} ·{" "}
+                      {formatRelativeTime(message.created_at)}
+                    </p>
+                  </div>
+
+                  <StatusBadge status={message.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Applications */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Recent applications
+            </h2>
+
+            <Link
+              to="/admin/applications"
+              className="text-sm font-semibold text-blue-600 hover:underline dark:text-cyan-400"
+            >
+              View all
+            </Link>
+          </div>
+
+          {applications.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              No applications yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {applications.map((application) => (
+                <Link
+                  key={application.id}
+                  to="/admin/applications"
+                  className="flex items-center justify-between gap-4 py-3.5 transition hover:opacity-80"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900 dark:text-white">
+                      {application.full_name}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {application.internships?.title ?? "Deleted internship"} ·{" "}
+                      {formatRelativeTime(application.created_at)}
+                    </p>
+                  </div>
+
+                  <StatusBadge status={application.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Platform */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          Platform
+        </h2>
+
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
+            <div className="flex items-center gap-3">
+              <Users size={18} className="text-blue-600 dark:text-blue-400" />
+
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Registered accounts
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-                  <Users size={18} />
-                </div>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">
+              {stats?.users ?? "—"}
+            </span>
+          </div>
 
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Users
-                </span>
-              </div>
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-950">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Database
+            </span>
 
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {counts?.users ?? "—"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
-                  <Settings size={18} />
-                </div>
-
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  System
-                </span>
-              </div>
-
-              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-600 dark:bg-green-500/10 dark:text-green-400">
-                Ready
-              </span>
-            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                error
+                  ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                  : "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
+              }`}
+            >
+              {error ? "Problem detected" : "Connected"}
+            </span>
           </div>
         </div>
       </div>
